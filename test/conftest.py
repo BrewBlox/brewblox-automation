@@ -7,7 +7,6 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 
 import pytest
-
 from brewblox_service import service
 
 
@@ -16,6 +15,7 @@ def log_enabled():
     """Sets log level to DEBUG for all test functions.
     Allows all logged messages to be captured during pytest runs"""
     logging.getLogger().setLevel(logging.DEBUG)
+    logging.captureWarnings(True)
 
 
 @pytest.fixture
@@ -25,17 +25,30 @@ def app_config() -> dict:
         'host': 'localhost',
         'port': 1234,
         'debug': False,
+        'broadcast_exchange': 'brewcast',
+        'update_interval': 2,
+        'volatile': True,
     }
 
 
 @pytest.fixture
 def sys_args(app_config) -> list:
-    return [
+    return [str(v) for v in [
         'app_name',
         '--name', app_config['name'],
         '--host', app_config['host'],
         '--port', str(app_config['port']),
-    ]
+        '--broadcast-exchange', app_config['broadcast_exchange'],
+        '--update-interval', app_config['update_interval'],
+        '--volatile',
+    ]]
+
+
+@pytest.fixture
+def event_loop(loop):
+    # aresponses uses the "event_loop" fixture
+    # this makes loop available under either name
+    yield loop
 
 
 @pytest.fixture

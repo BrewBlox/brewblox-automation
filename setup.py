@@ -1,13 +1,13 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='YOUR-PROJECT',
-    version='0.1',
+    name='brewblox-stepper',
+    use_scm_version={'local_scheme': lambda v: ''},
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='YOUR_REPOSITORY',
-    author='YOUR NAME',
-    author_email='YOU@PROVIDER.com',
+    url='https://github.com/BrewBlox/brewblox-stepper/',
+    author='BrewPi',
+    author_email='Development@brewpi.com',
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: GNU General Public License (GPL)',
@@ -21,5 +21,5 @@ setup(
         'brewblox-service'
     ],
     python_requires='>=3.7',
-    extras_require={'dev': ['pipenv']}
+    setup_requires=['setuptools_scm'],
 )
