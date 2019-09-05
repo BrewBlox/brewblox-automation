@@ -28,6 +28,10 @@ class Updater(features.ServiceFeature):
     def __str__(self):
         return f'{type(self).__name__}'
 
+    @property
+    def active(self):
+        return bool(self._task and not self._task.done())
+
     async def startup(self, app: web.Application):
         await self.shutdown(app)
         self._task = await scheduler.create_task(app, self._run())
@@ -44,19 +48,23 @@ class Updater(features.ServiceFeature):
             runtime_store = store.get_runtime_store(self.app)
             last_ok = True
 
-            LOGGER.info(f'Starting {self}')
+            await process_store.ready.wait()
+            await runtime_store.ready.wait()
 
-        except Exception as ex:
+            LOGGER.info(f'Started {self}')
+
+        except asyncio.CancelledError as ex:  # pragma: no cover
+            raise ex
+
+        except Exception as ex:  # pragma: no cover
             LOGGER.error(strex(ex))
             raise ex
 
         while True:
             try:
                 await asyncio.sleep(interval)
-                changed = False
 
-                if not runtime_store.config:
-                    continue
+                changed = False
 
                 for runtime in runtime_store.config.values():
                     process = process_store.config[runtime['id']]
