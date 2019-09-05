@@ -56,7 +56,9 @@ async def process():
 
 
 async def test_crud(app, client, process):
-    assert process == await response(client.post('/edit', json=deepcopy(process)))
+    assert process == await response(client.post('/edit', json=process))
+    await response(client.post('/edit', json=process), 500)
+
     assert [process] == await response(client.get('/edit'))
     assert process == await response(client.get('/edit/test-process'))
 
@@ -69,6 +71,7 @@ async def test_crud(app, client, process):
     })
     assert edited == await response(client.put('/edit/test-process', json=edited))
     assert [edited] == await response(client.get('/edit'))
+    await response(client.put('/edit/dummy', json=edited), 500)
 
     secondary = deepcopy(process)
     secondary['id'] = 'secondary'
@@ -79,9 +82,11 @@ async def test_crud(app, client, process):
 
     await response(client.delete('/edit/secondary'))
     assert [edited] == await response(client.get('/edit'))
+    await response(client.delete('/edit/secondary'), 500)
 
     await response(client.delete('/edit'))
     assert [] == await response(client.get('/edit'))
+    await response(client.delete('/edit'))
 
 
 async def test_runtime_basics(app, client, process):

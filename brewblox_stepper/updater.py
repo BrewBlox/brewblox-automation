@@ -17,7 +17,7 @@ def setup(app: web.Application):
 
 
 def get_updater(app: web.Application):
-    pass
+    return features.get(app, Updater)
 
 
 class Updater(features.ServiceFeature):

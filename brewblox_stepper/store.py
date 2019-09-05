@@ -17,6 +17,61 @@ READY_WAIT_TIMEOUT_S = 20
 
 LOGGER = brewblox_logger(__name__)
 
+# @dataclass
+# class Action:
+#     type: str
+#     opts: dict
+
+
+# @dataclass
+# class Response:
+#     body: dict
+
+
+# @dataclass
+# class Condition:
+#     id: str
+#     type: str
+#     opts: dict
+
+
+# @dataclass
+# class Step:
+#     name: str
+#     actions: List[Action]
+#     responses: List[Response]
+#     conditions: List[Condition]
+
+
+# @dataclass
+# class Process:
+#     id: str
+#     steps: List[Step]
+
+
+# @dataclass
+# class StepResult:
+#     name: str
+#     actions: List[str]
+#     start: int
+#     end: int
+
+
+# @dataclass
+# class ConditionResult:
+#     id: str
+#     values: dict
+
+
+# @dataclass
+# class Runtime:
+#     id: str
+#     step: int
+#     start: int
+#     end: int
+#     steps: List[StepResult]
+#     conditions: List[ConditionResult]
+
 
 def setup(app: web.Application):
     features.add(app, ProcessStore(app))
@@ -83,24 +138,19 @@ class Datastore(features.ServiceFeature):
         if self._volatile:
             return
 
-        data = {}
-
         async with self._lock:
             try:
                 self._rev = None
-                if not self.volatile:
-                    client = couchdb_client.get_client(self.app)
-                    self._rev, data = await client.read(DB_NAME, self.document, {})
-                    LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
+                client = couchdb_client.get_client(self.app)
+                self._rev, self._config = await client.read(DB_NAME, self.document, {})
+                LOGGER.info(f'{self} Read {len(self._config)} setting(s). Rev = {self._rev}')
 
             except asyncio.CancelledError:  # pragma: no cover
                 raise
 
             except Exception as ex:
                 LOGGER.error(f'{self} read error {strex(ex)}')
-
-            finally:
-                self._config = data
+                raise ex
 
     @when_ready
     async def write_store(self):
@@ -112,14 +162,15 @@ class Datastore(features.ServiceFeature):
                 if self._rev is None or self.document is None:
                     raise RuntimeError('Document or revision unknown - did read() fail?')
                 client = couchdb_client.get_client(self.app)
-                self.rev = await client.write(DB_NAME, self.document, self._rev, self._config)
-                LOGGER.info(f'{self} data saved. Rev = {self.rev}')
+                self._rev = await client.write(DB_NAME, self.document, self._rev, self._config)
+                LOGGER.info(f'{self} data saved. Rev = {self._rev}')
 
             except asyncio.CancelledError:  # pragma: no cover
                 raise
 
             except Exception as ex:
                 LOGGER.error(f'{self} write error {strex(ex)}')
+                raise ex
 
 
 class ProcessStore(Datastore):
@@ -131,8 +182,6 @@ class ProcessStore(Datastore):
     @when_ready
     async def create(self, process_data):
         id = process_data['id']
-        if id is None:
-            raise AttributeError('Process ID not set')
         if id in self.config:
             raise KeyError(f'Process with ID {id} already exists')
 
