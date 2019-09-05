@@ -9,6 +9,8 @@ import logging
 import pytest
 from brewblox_service import service
 
+from brewblox_stepper.__main__ import create_parser
+
 
 @pytest.fixture(scope='session', autouse=True)
 def log_enabled():
@@ -53,7 +55,8 @@ def event_loop(loop):
 
 @pytest.fixture
 def app(sys_args):
-    app = service.create_app('default', raw_args=sys_args[1:])
+    parser = create_parser('stepper')
+    app = service.create_app(parser=parser, raw_args=sys_args[1:])
     return app
 
 

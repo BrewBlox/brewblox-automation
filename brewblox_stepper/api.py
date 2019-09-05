@@ -138,7 +138,7 @@ async def remove(request: web.Request) -> web.Response:
             type: string
     """
     return web.json_response(
-        store.get_process_store(request.app).remove(
+        await store.get_process_store(request.app).remove(
             request.match_info['id']
         )
     )
@@ -162,18 +162,10 @@ async def start(request: web.Request) -> web.Response:
         description: Process ID
         schema:
             type: string
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
     """
     return web.json_response(
-        store.get_runtime_store(request.app).start(
-            request.match_info['id'],
-            await request.json()
+        await store.get_runtime_store(request.app).start(
+            request.match_info['id']
         )
     )
 
