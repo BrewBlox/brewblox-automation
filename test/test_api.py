@@ -34,27 +34,6 @@ async def app(app, loop):
     return app
 
 
-@pytest.fixture
-async def process():
-    return {
-        'id': 'test-process',
-        'steps': [
-            {
-                'name': 'step-one',
-                'actions': [],
-                'responses': [],
-                'conditions': [],
-            },
-            {
-                'name': 'step-two',
-                'actions': [],
-                'responses': [],
-                'conditions': [],
-            }
-        ]
-    }
-
-
 async def test_crud(app, client, process):
     assert process == await response(client.post('/edit', json=process))
     await response(client.post('/edit', json=process), 500)
