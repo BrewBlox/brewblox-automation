@@ -76,18 +76,50 @@ def process():
         'steps': [
             {
                 'name': 'step-one',
-                'actions': [{
-                    'type': 'BlockPatch',
-                    'opts': {}
-                }],
-                'responses': [{
-                    'type': 'Notification',
-                    'opts': {}
-                }],
-                'conditions': [{
-                    'type': 'TimeAbsolute',
-                    'opts': {}
-                }],
+                'actions': [
+                    {
+                        'type': 'BlockPatch',
+                        'opts': {
+                            'block': 'pwm-1',
+                            'service': 'sparkey',
+                            'key': 'desiredSetting',
+                            'value': 0,
+                        }
+                    }
+                ],
+                'responses': [
+                    {
+                        'type': 'Notification',
+                        'opts': {
+                            'title': 'VERY IMPORTANT',
+                            'message': 'Memo: one shrubbery',
+                        }
+                    }
+                ],
+                'conditions': [
+                    {
+                        'type': 'TimeAbsolute',
+                        'opts': {
+                            'time': 1567760830490,
+                        }
+                    },
+                    {
+                        'type': 'TimeElapsed',
+                        'opts': {
+                            'duration': 100,
+                        }
+                    },
+                    {
+                        'type': 'BlockValue',
+                        'opts': {
+                            'block': 'pwm-1',
+                            'service': 'sparkey',
+                            'key': 'value',
+                            'operator': 'ge',
+                            'value': 50,
+                        }
+                    }
+                ],
             },
             {
                 'name': 'step-two',
