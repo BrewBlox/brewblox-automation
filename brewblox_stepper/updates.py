@@ -20,7 +20,7 @@ def get_updater(app: web.Application):
     return features.get(app, Updater)
 
 
-async def update(process, runtime) -> bool:
+async def update(app, process, runtime) -> bool:
     if runtime['end'] is not None:
         return False  # Runtime is done
 
@@ -30,24 +30,29 @@ async def update(process, runtime) -> bool:
 
     if current['start'] is None:
         changed = True
-        current['start'] = utils.now()
 
-        for action in step['actions']:
-            handler = actions.INDEX[action['type']]
-            await handler.run(action['opts'], runtime)
+        try:
+            for action in step['actions']:
+                await actions.run(app, action, runtime)
+            current['start'] = utils.now()
+        except Exception as ex:  # pragma: no cover
+            LOGGER.error(f'Action error in {process["id"]} {strex(ex)}')
 
     # Short-circuit condition evaluation
     done = True
-    for cond in step['conditions']:
-        handler = conditions.INDEX[cond['type']]
-        if not await handler.check(cond['opts'], runtime):
-            LOGGER.info(f'still waiting - {handler}')
-            done = False
-            break
+    try:
+        for condition in step['conditions']:
+            if not await conditions.check(app, condition, runtime):
+                done = False
+                break
+    except Exception as ex:  # pragma: no cover
+        LOGGER.error(f'Condition error in {process["id"]} {strex(ex)}')
+        done = False
 
     if done:
         changed = True
         current['end'] = utils.now()
+        LOGGER.info(f'Step complete: {process["id"]} / {current["name"]}')
 
         try:
             next_index = current['index'] + 1
@@ -61,6 +66,7 @@ async def update(process, runtime) -> bool:
             })
 
         except IndexError:
+            LOGGER.info(f'Process complete: {process["id"]}')
             runtime['end'] = utils.now()
 
     return changed
@@ -114,7 +120,7 @@ class Updater(features.ServiceFeature):
 
                 for runtime in runtime_store.config.values():
                     process = process_store.config[runtime['id']]
-                    changed = changed or await update(process, runtime)
+                    changed = changed or await update(self.app, process, runtime)
 
                 if changed:
                     await runtime_store.write_store()

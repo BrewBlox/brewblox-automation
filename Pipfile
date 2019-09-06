@@ -19,6 +19,7 @@ aioresponses = "*"
 brewblox-tools = "*"
 pytest = "*"
 pytest-sugar = "*"
+aresponses = "*"
 
 [requires]
 python_version = "3.7"

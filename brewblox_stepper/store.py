@@ -218,11 +218,11 @@ class RuntimeStore(Datastore):
             'runtime': runtime,
             'process': process,
             'responses': [
-                await responses.INDEX[resp['type']].respond(resp['opts'])
+                await responses.respond(self.app, resp, runtime)
                 for resp in step['responses']
             ],
             'conditions': [
-                await conditions.INDEX[cond['type']].check(cond['opts'], runtime)
+                await conditions.check(self.app, cond, runtime)
                 for cond in step['conditions']
             ]
         }

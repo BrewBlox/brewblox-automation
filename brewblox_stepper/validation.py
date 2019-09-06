@@ -11,21 +11,6 @@ from brewblox_stepper import actions, conditions, responses
 MILLI_DATE = Or(None, And(int, lambda v: v > 1e11))
 
 
-def _validate_action(args: dict) -> bool:
-    handler = actions.INDEX.get(args['type'])
-    return bool(handler) and handler.is_valid(args['opts'])
-
-
-def _validate_response(args: dict) -> bool:
-    handler = responses.INDEX.get(args['type'])
-    return bool(handler) and handler.is_valid(args['opts'])
-
-
-def _validate_condition(args: dict) -> bool:
-    handler = conditions.INDEX.get(args['type'])
-    return bool(handler) and handler.is_valid(args['opts'])
-
-
 _process = Schema({
     'id': str,
     'steps': [{
@@ -35,21 +20,21 @@ _process = Schema({
                 'type': str,
                 'opts': dict,
             },
-                _validate_action)
+                actions.is_valid)
         ],
         'responses': [
             And({
                 'type': str,
                 'opts': dict,
             },
-                _validate_response)
+                responses.is_valid)
         ],
         'conditions': [
             And({
                 'type': str,
                 'opts': dict,
             },
-                _validate_condition)
+                conditions.is_valid)
         ],
     }]
 })
