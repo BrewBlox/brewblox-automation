@@ -67,3 +67,62 @@ def client(app, aiohttp_client, loop):
     Any tests wishing to add custom behavior to app can override the fixture
     """
     return loop.run_until_complete(aiohttp_client(app))
+
+
+@pytest.fixture
+def process():
+    return {
+        'id': 'test-process',
+        'steps': [
+            {
+                'name': 'step-one',
+                'actions': [{
+                    'type': 'BlockPatch',
+                    'opts': {}
+                }],
+                'responses': [{
+                    'type': 'Notification',
+                    'opts': {}
+                }],
+                'conditions': [{
+                    'type': 'TimeAbsolute',
+                    'opts': {}
+                }],
+            },
+            {
+                'name': 'step-two',
+                'actions': [],
+                'responses': [],
+                'conditions': [],
+            }
+        ]
+    }
+
+
+@pytest.fixture
+def runtime():
+    return {
+        'id': 'test-runtime',
+        'process': 'test-process',
+        'step': 1,
+        'start': 1567760830490,
+        'end': None,
+        'results': [{
+            'name': 'step-one',
+            'index': 0,
+            'start': 1567760830490,
+            'end': 1567760960434,
+            'logs': [
+                {
+                    'timestamp': 1567760960434,
+                    'source': 'Time Condition',
+                    'message': 'All done',
+                },
+                {
+                    'timestamp': 1567760960434,
+                    'source': 'step-one',
+                    'message': 'Advancing',
+                }
+            ]
+        }]
+    }

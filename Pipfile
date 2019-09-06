@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 brewblox-service = ">=0.15.0"
+schema = "*"
 
 [dev-packages]
 pytest-flake8 = "*"

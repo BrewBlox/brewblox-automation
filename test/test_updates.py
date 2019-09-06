@@ -14,27 +14,6 @@ TESTED = updates.__name__
 
 
 @pytest.fixture
-async def process():
-    return {
-        'id': 'test-process',
-        'steps': [
-            {
-                'name': 'step-one',
-                'actions': [],
-                'responses': [],
-                'conditions': [],
-            },
-            {
-                'name': 'step-two',
-                'actions': [],
-                'responses': [],
-                'conditions': [],
-            }
-        ]
-    }
-
-
-@pytest.fixture
 async def app(app, loop):
     app['config']['update_interval'] = 0.01
     scheduler.setup(app)
