@@ -6,7 +6,8 @@ from copy import deepcopy
 
 import pytest
 from aiohttp.client_exceptions import ContentTypeError
-from brewblox_service import scheduler
+from asynctest import CoroutineMock
+from brewblox_service import http_client, scheduler
 
 from brewblox_stepper import api, store
 
@@ -26,7 +27,14 @@ async def status(request):
 
 
 @pytest.fixture
+async def conditions_mock(mocker):
+    m = mocker.patch(store.__name__ + '.conditions.check', CoroutineMock(return_value=False))
+    return m
+
+
+@pytest.fixture
 async def app(app, loop):
+    http_client.setup(app)
     scheduler.setup(app)
     store.setup(app)
     api.setup(app)
@@ -68,7 +76,7 @@ async def test_crud(app, client, process):
     await response(client.delete('/edit'))
 
 
-async def test_runtime_basics(app, client, process):
+async def test_runtime_basics(app, client, process, conditions_mock):
     # Start
     await response(client.post('/start/test-process'), 500)
     await response(client.post('/edit', json=process))
@@ -83,8 +91,11 @@ async def test_runtime_basics(app, client, process):
 
     # Status
     resp = await response(client.post('/status/test-process', json={}))
-    assert len(resp['responses'])
-    assert len(resp['conditions'])
+    assert resp['responses'] == [{
+        'title': 'VERY IMPORTANT',
+        'message': 'Memo: one shrubbery',
+    }]
+    assert resp['conditions'] == [False, False, False]
 
     await response(client.post('/status/dummy', json={}), 500)
 

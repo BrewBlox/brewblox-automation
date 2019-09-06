@@ -24,7 +24,14 @@ async def create(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.create
-    produces: application/json
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: process
+        required: true
     """
     return web.json_response(
         await store.get_process_store(request.app).create(
@@ -42,7 +49,8 @@ async def all(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.all
-    produces: application/json
+    produces:
+    - application/json
     """
     return web.json_response(
         await store.get_process_store(request.app).all()
@@ -58,7 +66,8 @@ async def clear(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.clear
-    produces: application/json
+    produces:
+    - application/json
     """
     return web.json_response(
         await store.get_process_store(request.app).clear()
@@ -74,7 +83,8 @@ async def read(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.read
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -100,7 +110,8 @@ async def write(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.write
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -109,6 +120,11 @@ async def write(request: web.Request) -> web.Response:
         description: Process ID
         schema:
             type: string
+    -
+        in: body
+        name: body
+        description: process
+        required: true
     """
     return web.json_response(
         await store.get_process_store(request.app).write(
@@ -127,7 +143,8 @@ async def remove(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.remove
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -153,7 +170,8 @@ async def start(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.start
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -179,7 +197,8 @@ async def advance(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.advance
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -213,7 +232,8 @@ async def status(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.status
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id
@@ -247,7 +267,8 @@ async def exit(request: web.Request) -> web.Response:
     - Stepper
     - Process
     operationId: process.exit
-    produces: application/json
+    produces:
+    - application/json
     parameters:
     -
         name: id

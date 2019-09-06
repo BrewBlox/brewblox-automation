@@ -1,0 +1,33 @@
+{
+    "id": "test-process",
+    "steps": [
+        {
+            "name": "step-one",
+            "actions": [
+                {
+                    "type": "BlockPatch",
+                    "opts": {
+                        "block": "sensor-1",
+                        "service": "sparkey",
+                        "data": {
+                            "value[degC]": 5
+                        }
+                    }
+                }
+            ],
+            "responses": [],
+            "conditions": [
+                {
+                    "type": "BlockValue",
+                    "opts": {
+                        "block": "sensor-1",
+                        "service": "sparkey",
+                        "key": "value[degC]",
+                        "operator": "ge",
+                        "value": 10
+                    }
+                }
+            ]
+        }
+    ]
+}

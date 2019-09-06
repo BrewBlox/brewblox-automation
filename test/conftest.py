@@ -3,7 +3,6 @@ Master file for pytest fixtures.
 Any fixtures declared here are available to all test functions in this directory.
 """
 
-
 import logging
 
 import pytest
@@ -82,8 +81,9 @@ def process():
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
-                            'key': 'desiredSetting',
-                            'value': 0,
+                            'data': {
+                                'desiredSetting': 0
+                            }
                         }
                     }
                 ],
@@ -114,7 +114,7 @@ def process():
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
-                            'key': 'value',
+                            'key': 'value[degC]',
                             'operator': 'ge',
                             'value': 50,
                         }
