@@ -4,13 +4,10 @@ Conditions available to steps
 
 
 from abc import abstractmethod
-from time import time
 
 from schema import And, Or, Schema
 
-
-def now():
-    return time * 1000
+from brewblox_stepper import utils
 
 
 class ConditionBase:
@@ -37,7 +34,7 @@ class TimeAbsolute(ConditionBase):
 
     @classmethod
     async def check(cls, opts: dict, runtime: dict) -> bool:
-        return now() > opts['time']
+        return utils.now() > opts['time']
 
 
 class TimeElapsed(ConditionBase):
@@ -52,7 +49,8 @@ class TimeElapsed(ConditionBase):
     @classmethod
     async def check(cls, opts: dict, runtime: dict) -> bool:
         start = runtime['results'][-1]['start']
-        return bool(start) and now() > start + opts['duration']
+        duration = opts['duration']
+        return bool(start) and utils.now() - start > duration
 
 
 class BlockValue(ConditionBase):

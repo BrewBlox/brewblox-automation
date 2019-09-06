@@ -16,7 +16,7 @@ class ActionBase:
 
     @classmethod
     @abstractmethod
-    async def run(cls, opts: dict):
+    async def run(cls, opts: dict, runtime: dict):
         """Just Do It"""
 
 
@@ -33,7 +33,7 @@ class BlockPatch(ActionBase):
         return cls._schema.is_valid(opts)
 
     @classmethod
-    async def run(cls, opts: dict):
+    async def run(cls, opts: dict, runtime: dict):
         """TODO"""
 
 

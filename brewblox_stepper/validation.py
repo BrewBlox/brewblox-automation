@@ -57,8 +57,6 @@ _process = Schema({
 
 _runtime = Schema({
     'id': str,
-    'process': str,
-    'step': And(int, lambda v: v >= 0),
     'start': MILLI_DATE,
     'end': MILLI_DATE,
     'results': [{

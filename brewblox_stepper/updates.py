@@ -7,7 +7,7 @@ import asyncio
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_stepper import store
+from brewblox_stepper import actions, conditions, store, utils
 
 LOGGER = brewblox_logger(__name__)
 
@@ -18,6 +18,52 @@ def setup(app: web.Application):
 
 def get_updater(app: web.Application):
     return features.get(app, Updater)
+
+
+async def update(process, runtime) -> bool:
+    if runtime['end'] is not None:
+        return False  # Runtime is done
+
+    current = runtime['results'][-1]
+    step = process['steps'][current['index']]
+    changed = False
+
+    if current['start'] is None:
+        changed = True
+        current['start'] = utils.now()
+
+        for action in step['actions']:
+            handler = actions.INDEX[action['type']]
+            await handler.run(action['opts'], runtime)
+
+    # Short-circuit condition evaluation
+    done = True
+    for cond in step['conditions']:
+        handler = conditions.INDEX[cond['type']]
+        if not await handler.check(cond['opts'], runtime):
+            LOGGER.info(f'still waiting - {handler}')
+            done = False
+            break
+
+    if done:
+        changed = True
+        current['end'] = utils.now()
+
+        try:
+            next_index = current['index'] + 1
+            next_step = process['steps'][next_index]
+            runtime['results'].append({
+                'name': next_step['name'],
+                'index': next_index,
+                'start': None,  # run actions next update
+                'end': None,
+                'logs': [],
+            })
+
+        except IndexError:
+            runtime['end'] = utils.now()
+
+    return changed
 
 
 class Updater(features.ServiceFeature):
@@ -68,7 +114,7 @@ class Updater(features.ServiceFeature):
 
                 for runtime in runtime_store.config.values():
                     process = process_store.config[runtime['id']]
-                    changed = changed or await self._update(process, runtime)
+                    changed = changed or await update(process, runtime)
 
                 if changed:
                     await runtime_store.write_store()
@@ -82,7 +128,3 @@ class Updater(features.ServiceFeature):
                 if last_ok:
                     LOGGER.error(strex(ex))
                     last_ok = False
-
-    async def _update(self, process, runtime) -> bool:
-        LOGGER.info('update!')
-        return False

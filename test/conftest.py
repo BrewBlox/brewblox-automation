@@ -106,7 +106,7 @@ def process():
                     {
                         'type': 'TimeElapsed',
                         'opts': {
-                            'duration': 100,
+                            'duration': 1000,
                         }
                     },
                     {
@@ -134,27 +134,23 @@ def process():
 @pytest.fixture
 def runtime():
     return {
-        'id': 'test-runtime',
-        'process': 'test-process',
-        'step': 1,
+        'id': 'test-process',
         'start': 1567760830490,
         'end': None,
-        'results': [{
-            'name': 'step-one',
-            'index': 0,
-            'start': 1567760830490,
-            'end': 1567760960434,
-            'logs': [
-                {
-                    'timestamp': 1567760960434,
-                    'source': 'Time Condition',
-                    'message': 'All done',
-                },
-                {
-                    'timestamp': 1567760960434,
-                    'source': 'step-one',
-                    'message': 'Advancing',
-                }
-            ]
-        }]
+        'results': [
+            {
+                'name': 'step-one',
+                'index': 0,
+                'start': 1567760830490,
+                'end': None,
+                'logs': [
+                    {
+                        'timestamp': 1567760960434,
+                        'source': 'Time Condition',
+                        'message': 'Busy...',
+                    },
+
+                ]
+            },
+        ]
     }

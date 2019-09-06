@@ -3,12 +3,13 @@ Manages processes and their corresponding runtimes
 """
 
 import asyncio
-import time
 from abc import abstractmethod
 from functools import wraps
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, couchdb_client, features, strex
+
+from brewblox_stepper import conditions, responses, utils, validation
 
 DB_NAME = 'brewblox-stepper'
 PROCESS_DOCUMENT = 'stepper-process'
@@ -29,10 +30,6 @@ def get_process_store(app: web.Application) -> 'ProcessStore':
 
 def get_runtime_store(app: web.Application) -> 'RuntimeStore':
     return features.get(app, RuntimeStore)
-
-
-def now():
-    return int(round(time.time() * 1000))
 
 
 def when_ready(func):
@@ -171,19 +168,28 @@ class RuntimeStore(Datastore):
 
     @when_ready
     async def start(self, id: str):
-        if id in self.config:
-            raise RuntimeError(f'Process {id} is already active')
-        if id not in get_process_store(self.app).config:
+        process = get_process_store(self.app).config.get(id)
+        if not process:
             raise KeyError(f'Process {id} is not defined')
+        if id in self.config:
+            raise RuntimeError(f'Runtime {id} is already active')
 
-        self.config[id] = {
+        runtime = {
             'id': id,
-            'step': 0,
-            'start': now(),
-            'end': 0,
-            'steps': [],
-            'conditions': []
+            'start': utils.now(),
+            'end': None,
+            'results': [
+                {
+                    'name': process['steps'][0]['name'],
+                    'index': 0,
+                    'start': None,
+                    'end': None,
+                    'logs': [],
+                }
+            ],
         }
+        validation.validate_runtime(runtime)
+        self.config[id] = runtime
         await self.write_store()
         return self.config[id]
 
@@ -198,9 +204,28 @@ class RuntimeStore(Datastore):
 
     @when_ready
     async def status(self, id: str, args):
-        if id not in self.config:
-            raise KeyError(f'Process with ID {id} not found or not started')
-        return self.config[id]
+        process = get_process_store(self.app).config.get(id)
+        runtime = self.config.get(id)
+        if not process:
+            raise KeyError(f'Process {id} is not defined')
+        if not runtime:
+            raise KeyError(f'Runtime {id} not found or not started')
+
+        results = runtime['results'][-1]
+        step = process['steps'][results['index']]
+
+        return {
+            'runtime': runtime,
+            'process': process,
+            'responses': [
+                await responses.INDEX[resp['type']].respond(resp['opts'])
+                for resp in step['responses']
+            ],
+            'conditions': [
+                await conditions.INDEX[cond['type']].check(cond['opts'], runtime)
+                for cond in step['conditions']
+            ]
+        }
 
     @when_ready
     async def exit(self, id: str, args):
