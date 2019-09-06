@@ -12,21 +12,18 @@ MILLI_DATE = Or(None, And(int, lambda v: v > 1e11))
 
 
 def _validate_action(args: dict) -> bool:
-    if args['type'] not in actions.INDEX:
-        return False
-    return True
+    handler = actions.INDEX.get(args['type'])
+    return bool(handler) and handler.is_valid(args['opts'])
 
 
 def _validate_response(args: dict) -> bool:
-    if args['type'] not in responses.INDEX:
-        return False
-    return True
+    handler = responses.INDEX.get(args['type'])
+    return bool(handler) and handler.is_valid(args['opts'])
 
 
 def _validate_condition(args: dict) -> bool:
-    if args['type'] not in conditions.INDEX:
-        return False
-    return True
+    handler = conditions.INDEX.get(args['type'])
+    return bool(handler) and handler.is_valid(args['opts'])
 
 
 _process = Schema({
@@ -60,8 +57,6 @@ _process = Schema({
 
 _runtime = Schema({
     'id': str,
-    'process': str,
-    'step': And(int, lambda v: v >= 0),
     'start': MILLI_DATE,
     'end': MILLI_DATE,
     'results': [{

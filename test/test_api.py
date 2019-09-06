@@ -82,8 +82,16 @@ async def test_runtime_basics(app, client, process):
     await response(client.post('/advance/dummy', json={}), 500)
 
     # Status
-    await response(client.post('/status/test-process', json={}))
+    resp = await response(client.post('/status/test-process', json={}))
+    assert len(resp['responses'])
+    assert len(resp['conditions'])
+
     await response(client.post('/status/dummy', json={}), 500)
+
+    secondary = deepcopy(process)
+    secondary['id'] = 'secondary'
+    await response(client.post('/edit', json=secondary))
+    await response(client.post('/status/secondary', json={}), 500)
 
     # Exit
     await response(client.post('/exit/test-process', json={}))

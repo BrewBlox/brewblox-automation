@@ -76,18 +76,50 @@ def process():
         'steps': [
             {
                 'name': 'step-one',
-                'actions': [{
-                    'type': 'BlockPatch',
-                    'opts': {}
-                }],
-                'responses': [{
-                    'type': 'Notification',
-                    'opts': {}
-                }],
-                'conditions': [{
-                    'type': 'TimeAbsolute',
-                    'opts': {}
-                }],
+                'actions': [
+                    {
+                        'type': 'BlockPatch',
+                        'opts': {
+                            'block': 'pwm-1',
+                            'service': 'sparkey',
+                            'key': 'desiredSetting',
+                            'value': 0,
+                        }
+                    }
+                ],
+                'responses': [
+                    {
+                        'type': 'Notification',
+                        'opts': {
+                            'title': 'VERY IMPORTANT',
+                            'message': 'Memo: one shrubbery',
+                        }
+                    }
+                ],
+                'conditions': [
+                    {
+                        'type': 'TimeAbsolute',
+                        'opts': {
+                            'time': 1567760830490,
+                        }
+                    },
+                    {
+                        'type': 'TimeElapsed',
+                        'opts': {
+                            'duration': 1000,
+                        }
+                    },
+                    {
+                        'type': 'BlockValue',
+                        'opts': {
+                            'block': 'pwm-1',
+                            'service': 'sparkey',
+                            'key': 'value',
+                            'operator': 'ge',
+                            'value': 50,
+                        }
+                    }
+                ],
             },
             {
                 'name': 'step-two',
@@ -102,27 +134,23 @@ def process():
 @pytest.fixture
 def runtime():
     return {
-        'id': 'test-runtime',
-        'process': 'test-process',
-        'step': 1,
+        'id': 'test-process',
         'start': 1567760830490,
         'end': None,
-        'results': [{
-            'name': 'step-one',
-            'index': 0,
-            'start': 1567760830490,
-            'end': 1567760960434,
-            'logs': [
-                {
-                    'timestamp': 1567760960434,
-                    'source': 'Time Condition',
-                    'message': 'All done',
-                },
-                {
-                    'timestamp': 1567760960434,
-                    'source': 'step-one',
-                    'message': 'Advancing',
-                }
-            ]
-        }]
+        'results': [
+            {
+                'name': 'step-one',
+                'index': 0,
+                'start': 1567760830490,
+                'end': None,
+                'logs': [
+                    {
+                        'timestamp': 1567760960434,
+                        'source': 'Time Condition',
+                        'message': 'Busy...',
+                    },
+
+                ]
+            },
+        ]
     }
