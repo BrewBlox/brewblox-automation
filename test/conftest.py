@@ -125,6 +125,17 @@ def process():
                 'name': 'step-two',
                 'actions': [],
                 'responses': [],
+                'conditions': [
+                    {
+                        'type': 'ManualAdvance',
+                        'opts': {},
+                    }
+                ],
+            },
+            {
+                'name': 'step-empty',
+                'actions': [],
+                'responses': [],
                 'conditions': [],
             }
         ]
