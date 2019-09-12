@@ -15,7 +15,7 @@ def setup(app: web.Application):
     app.router.add_routes(routes)
 
 
-@routes.post('/edit')
+@routes.post('/process')
 async def create(request: web.Request) -> web.Response:
     """
     ---
@@ -40,7 +40,7 @@ async def create(request: web.Request) -> web.Response:
     )
 
 
-@routes.get('/edit')
+@routes.get('/process')
 async def all(request: web.Request) -> web.Response:
     """
     ---
@@ -57,7 +57,7 @@ async def all(request: web.Request) -> web.Response:
     )
 
 
-@routes.delete('/edit')
+@routes.delete('/process')
 async def clear(request: web.Request) -> web.Response:
     """
     ---
@@ -74,7 +74,7 @@ async def clear(request: web.Request) -> web.Response:
     )
 
 
-@routes.get('/edit/{id}')
+@routes.get('/process/{id}')
 async def read(request: web.Request) -> web.Response:
     """
     ---
@@ -101,7 +101,7 @@ async def read(request: web.Request) -> web.Response:
     )
 
 
-@routes.put('/edit/{id}')
+@routes.put('/process/{id}')
 async def write(request: web.Request) -> web.Response:
     """
     ---
@@ -134,7 +134,7 @@ async def write(request: web.Request) -> web.Response:
     )
 
 
-@routes.delete('/edit/{id}')
+@routes.delete('/process/{id}')
 async def remove(request: web.Request) -> web.Response:
     """
     ---
@@ -223,11 +223,72 @@ async def advance(request: web.Request) -> web.Response:
     )
 
 
-@routes.post('/status/{id}')
+@routes.get('/runtime')
+async def all_runtimes(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Read all runtimes
+    tags:
+    - Stepper
+    - Process
+    operationId: process.runtime.all
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await store.get_runtime_store(request.app).all()
+    )
+
+
+@routes.get('/runtime/{id}')
+async def read_runtime(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Read one runtime
+    tags:
+    - Stepper
+    - Process
+    operationId: process.runtime.read
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: Process ID
+        schema:
+            type: string
+    """
+    return web.json_response(
+        await store.get_runtime_store(request.app).read(
+            request.match_info['id']
+        )
+    )
+
+
+@routes.get('/status')
+async def all_statuses(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Read all runtime statuses
+    tags:
+    - Stepper
+    - Process
+    operationId: process.status.all
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await store.get_runtime_store(request.app).all_statuses()
+    )
+
+
+@routes.get('/status/{id}')
 async def status(request: web.Request) -> web.Response:
     """
     ---
-    summary: Update and read Process Step status
+    summary: Read runtime status
     tags:
     - Stepper
     - Process
@@ -242,18 +303,10 @@ async def status(request: web.Request) -> web.Response:
         description: Process ID
         schema:
             type: string
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
     """
     return web.json_response(
         await store.get_runtime_store(request.app).status(
-            request.match_info['id'],
-            await request.json()
+            request.match_info['id']
         )
     )
 
@@ -262,7 +315,7 @@ async def status(request: web.Request) -> web.Response:
 async def exit(request: web.Request) -> web.Response:
     """
     ---
-    summary: Exit running Process
+    summary: Exit runtime
     tags:
     - Stepper
     - Process

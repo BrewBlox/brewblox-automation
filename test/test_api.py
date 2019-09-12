@@ -43,11 +43,11 @@ async def app(app, loop):
 
 
 async def test_crud(app, client, process):
-    assert process == await response(client.post('/edit', json=process))
-    await response(client.post('/edit', json=process), 500)
+    assert process == await response(client.post('/process', json=process))
+    await response(client.post('/process', json=process), 500)
 
-    assert [process] == await response(client.get('/edit'))
-    assert process == await response(client.get('/edit/test-process'))
+    assert [process] == await response(client.get('/process'))
+    assert process == await response(client.get('/process/test-process'))
 
     edited = deepcopy(process)
     edited['steps'].append({
@@ -56,55 +56,79 @@ async def test_crud(app, client, process):
         'responses': [],
         'conditions': []
     })
-    assert edited == await response(client.put('/edit/test-process', json=edited))
-    assert [edited] == await response(client.get('/edit'))
-    await response(client.put('/edit/dummy', json=edited), 500)
+    assert edited == await response(client.put('/process/test-process', json=edited))
+    assert [edited] == await response(client.get('/process'))
+    await response(client.put('/process/dummy', json=edited), 500)
 
     secondary = deepcopy(process)
     secondary['id'] = 'secondary'
-    assert secondary == await response(client.post('/edit', json=secondary))
-    assert secondary == await response(client.get('/edit/secondary'))
-    resp = await response(client.get('/edit'))
+    assert secondary == await response(client.post('/process', json=secondary))
+    assert secondary == await response(client.get('/process/secondary'))
+    resp = await response(client.get('/process'))
     assert len(resp) == 2
 
-    await response(client.delete('/edit/secondary'))
-    assert [edited] == await response(client.get('/edit'))
-    await response(client.delete('/edit/secondary'), 500)
+    await response(client.delete('/process/secondary'))
+    assert [edited] == await response(client.get('/process'))
+    await response(client.delete('/process/secondary'), 500)
 
-    await response(client.delete('/edit'))
-    assert [] == await response(client.get('/edit'))
-    await response(client.delete('/edit'))
+    await response(client.delete('/process'))
+    assert [] == await response(client.get('/process'))
+    await response(client.delete('/process'))
 
 
-async def test_runtime_basics(app, client, process, conditions_mock):
-    # Start
+async def test_process_start(app, client, process, conditions_mock):
     await response(client.post('/start/test-process'), 500)
-    await response(client.post('/edit', json=process))
+    await response(client.post('/process', json=process))
     await response(client.post('/start/test-process'))
     await response(client.post('/start/test-process'), 500)
     await response(client.post('/start/dummy'), 500)
 
-    # Advance
-    await response(client.post('/advance/test-process', json={'index': 1}))
-    await response(client.post('/advance/test-process', json={'index': 1}))
+
+async def test_process_advance(app, client, process, conditions_mock):
+    await response(client.post('/process', json=process))  # create
+    await response(client.post('/advance/test-process', json={'index': 1}), 500)  # not started -> error
+    await response(client.post('/start/test-process'))  # start
+
+    rt = await response(client.post('/advance/test-process', json={'index': 1}))
+    assert len(rt['results']) == 2
+    rt = await response(client.post('/advance/test-process', json={'index': 1}))
+    assert len(rt['results']) == 3
+
+    await response(client.post('/advance/test-process', json={'index': 100}), 500)
     await response(client.post('/advance/dummy', json={}), 500)
 
-    # Status
-    resp = await response(client.post('/status/test-process', json={}))
+
+async def test_process_read(app, client, process, conditions_mock):
+    await response(client.post('/process', json=process))
+    await response(client.post('/start/test-process'))
+    rt = await response(client.post('/advance/test-process', json={'index': 1}))
+
+    assert rt == await response(client.get('/runtime/test-process'))
+    await response(client.get('/runtime/dummy'), 500)
+    assert [rt] == await response(client.get('/runtime'))
+
+
+async def test_process_status(app, client, process, conditions_mock):
+    await response(client.post('/process', json=process))
+    await response(client.get('/status/test-process'), 500)
+    await response(client.post('/start/test-process'))
+
+    resp = await response(client.get('/status/test-process'))
+    assert [resp] == await response(client.get('/status'))
     assert resp['responses'] == [{
         'title': 'VERY IMPORTANT',
         'message': 'Memo: one shrubbery',
     }]
     assert resp['conditions'] == [False, False, False]
 
-    await response(client.post('/status/dummy', json={}), 500)
+    await response(client.get('/status/dummy'), 500)
 
-    secondary = deepcopy(process)
-    secondary['id'] = 'secondary'
-    await response(client.post('/edit', json=secondary))
-    await response(client.post('/status/secondary', json={}), 500)
 
-    # Exit
+async def test_process_exit(app, client, process, conditions_mock):
+    await response(client.post('/process', json=process))
+    await response(client.post('/start/test-process'))
+
     await response(client.post('/exit/test-process', json={}))
     await response(client.post('/exit/test-process', json={}))
     await response(client.post('/exit/dummy', json={}), 500)
+    assert [] == await response(client.get('/runtime'))
