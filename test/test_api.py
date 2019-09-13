@@ -3,6 +3,7 @@ Tests brewblox_stepper.api
 """
 
 from copy import deepcopy
+from unittest.mock import ANY
 
 import pytest
 from aiohttp.client_exceptions import ContentTypeError
@@ -102,26 +103,28 @@ async def test_process_read(app, client, process, conditions_mock):
     await response(client.post('/process', json=process))
     await response(client.post('/start/test-process'))
     rt = await response(client.post('/advance/test-process', json={'index': 1}))
+    rt['conditions'] = ANY
+    rt['responses'] = []
 
     assert rt == await response(client.get('/runtime/test-process'))
     await response(client.get('/runtime/dummy'), 500)
     assert [rt] == await response(client.get('/runtime'))
 
 
-async def test_process_status(app, client, process, conditions_mock):
+async def test_runtime_read(app, client, process, conditions_mock):
     await response(client.post('/process', json=process))
-    await response(client.get('/status/test-process'), 500)
+    await response(client.get('/runtime/test-process'), 500)
     await response(client.post('/start/test-process'))
 
-    resp = await response(client.get('/status/test-process'))
-    assert [resp] == await response(client.get('/status'))
+    resp = await response(client.get('/runtime/test-process'))
+    assert [resp] == await response(client.get('/runtime'))
     assert resp['responses'] == [{
         'title': 'VERY IMPORTANT',
         'message': 'Memo: one shrubbery',
     }]
     assert resp['conditions'] == [False, False, False]
 
-    await response(client.get('/status/dummy'), 500)
+    await response(client.get('/runtime/dummy'), 500)
 
 
 async def test_process_exit(app, client, process, conditions_mock):
