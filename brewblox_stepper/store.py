@@ -222,15 +222,7 @@ class RuntimeStore(Datastore):
         return self.config[id]
 
     @when_ready
-    async def all(self):
-        return [rt for rt in self.config.values()]
-
-    @when_ready
     async def read(self, id: str):
-        return self.config[id]
-
-    @when_ready
-    async def status(self, id: str):
         process = get_process_store(self.app).config.get(id)
         runtime = self.config.get(id)
         if not process:
@@ -242,7 +234,7 @@ class RuntimeStore(Datastore):
         step = process['steps'][results['index']]
 
         return {
-            'id': id,
+            **runtime,
             'responses': [
                 await responses.respond(self.app, resp, runtime)
                 for resp in step['responses']
@@ -254,10 +246,10 @@ class RuntimeStore(Datastore):
         }
 
     @when_ready
-    async def all_statuses(self):
+    async def all(self):
         res = []
         for id in self.config.keys():
-            res.append(await self.status(id))
+            res.append(await self.read(id))
         return res
 
     @when_ready

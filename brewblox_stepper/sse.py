@@ -44,7 +44,7 @@ class SSEPublisher(features.ServiceFeature):
         self._queues.add(queue)
         try:
             if self._current is None:
-                self._current = await store.get_runtime_store(self.app).all_statuses()
+                self._current = await store.get_runtime_store(self.app).all()
             await queue.put(self._current)
 
         except asyncio.CancelledError:  # pragma: no cover
@@ -83,7 +83,7 @@ class SSEPublisher(features.ServiceFeature):
                     self._current = None
                     continue
 
-                self._current = await runtime_store.all_statuses()
+                self._current = await runtime_store.all()
                 coros = [q.put(self._current) for q in self._queues]
                 await asyncio.wait_for(asyncio.gather(*coros, return_exceptions=True), PUBLISH_TIMEOUT_S)
 
@@ -106,7 +106,7 @@ def _cors_headers(request):
     }
 
 
-@routes.get('/sse/status')
+@routes.get('/sse/runtime')
 async def subscribe(request: web.Request) -> web.Response:
     """
     ---

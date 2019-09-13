@@ -267,50 +267,6 @@ async def read_runtime(request: web.Request) -> web.Response:
     )
 
 
-@routes.get('/status')
-async def all_statuses(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read all runtime statuses
-    tags:
-    - Stepper
-    - Process
-    operationId: process.status.all
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).all_statuses()
-    )
-
-
-@routes.get('/status/{id}')
-async def status(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read runtime status
-    tags:
-    - Stepper
-    - Process
-    operationId: process.status
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Process ID
-        schema:
-            type: string
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).status(
-            request.match_info['id']
-        )
-    )
-
-
 @routes.post('/exit/{id}')
 async def exit(request: web.Request) -> web.Response:
     """
