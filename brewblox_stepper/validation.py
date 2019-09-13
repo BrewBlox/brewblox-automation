@@ -51,6 +51,7 @@ _runtime = Schema({
         'end': MILLI_DATE,
         'logs': [{
             'timestamp': MILLI_DATE,
+            'ref': str,
             'source': str,
             'message': str,
         }],

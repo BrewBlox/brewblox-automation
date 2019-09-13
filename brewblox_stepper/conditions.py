@@ -79,11 +79,24 @@ class BlockValue(ConditionBase):
         return op(block['data'][opts['key']], opts['value'])
 
 
+class ManualAdvance(ConditionBase):
+    _schema = Schema({})
+
+    @classmethod
+    def is_valid(cls, opts: dict) -> bool:
+        return cls._schema.is_valid(opts)
+
+    @classmethod
+    async def check(cls, app: web.Application, opts: dict, runtime: dict) -> bool:
+        return False
+
+
 _INDEX = {
     v.__name__: v for v in [
         TimeAbsolute,
         TimeElapsed,
         BlockValue,
+        ManualAdvance,
     ]
 }
 

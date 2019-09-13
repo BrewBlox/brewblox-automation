@@ -125,6 +125,17 @@ def process():
                 'name': 'step-two',
                 'actions': [],
                 'responses': [],
+                'conditions': [
+                    {
+                        'type': 'ManualAdvance',
+                        'opts': {},
+                    }
+                ],
+            },
+            {
+                'name': 'step-empty',
+                'actions': [],
+                'responses': [],
                 'conditions': [],
             }
         ]
@@ -146,6 +157,7 @@ def runtime():
                 'logs': [
                     {
                         'timestamp': 1567760960434,
+                        'ref': 'condition-1',
                         'source': 'Time Condition',
                         'message': 'Busy...',
                     },

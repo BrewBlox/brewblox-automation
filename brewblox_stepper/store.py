@@ -195,15 +195,42 @@ class RuntimeStore(Datastore):
 
     @when_ready
     async def advance(self, id: str, args):
-        if id not in self.config:
-            raise KeyError(f'Process with ID {id} not found or not started')
-        index = args['index']
-        self.config[id]['step'] = index
+        process = get_process_store(self.app).config.get(id)
+        if not process:
+            raise KeyError(f'Process {id} is not defined')
+        runtime = self.config.get(id)
+        if not runtime:
+            raise KeyError(f'Process {id} not not started')
+
+        current = runtime['results'][-1]
+        index = args.get('index') or current['index'] + 1
+        current['end'] = current['end'] or utils.now()
+        LOGGER.info(f'{index}, {current}')
+
+        if index >= len(process['steps']):
+            raise KeyError(f'Process {id} does not contain a step with index {index}')
+
+        runtime['results'].append({
+            'name': process['steps'][index]['name'],
+            'index': index,
+            'start': None,
+            'end': None,
+            'logs': [],
+        })
+
         await self.write_store()
         return self.config[id]
 
     @when_ready
-    async def status(self, id: str, args):
+    async def all(self):
+        return [rt for rt in self.config.values()]
+
+    @when_ready
+    async def read(self, id: str):
+        return self.config[id]
+
+    @when_ready
+    async def status(self, id: str):
         process = get_process_store(self.app).config.get(id)
         runtime = self.config.get(id)
         if not process:
@@ -215,8 +242,7 @@ class RuntimeStore(Datastore):
         step = process['steps'][results['index']]
 
         return {
-            'runtime': runtime,
-            'process': process,
+            'id': id,
             'responses': [
                 await responses.respond(self.app, resp, runtime)
                 for resp in step['responses']
@@ -226,6 +252,13 @@ class RuntimeStore(Datastore):
                 for cond in step['conditions']
             ]
         }
+
+    @when_ready
+    async def all_statuses(self):
+        res = []
+        for id in self.config.keys():
+            res.append(await self.status(id))
+        return res
 
     @when_ready
     async def exit(self, id: str, args):

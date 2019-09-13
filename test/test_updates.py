@@ -129,6 +129,22 @@ async def test_update_func(app, client, process, aresponses: ResponsesMockServer
     assert await updates.update(app, process, runtime) is True
     assert len(runtime['results']) == 2
 
+    # This step contains a ManualAdvance condition
+    assert await updates.update(app, process, runtime) is True  # set start, run actions
+    assert await updates.update(app, process, runtime) is False
+    assert await updates.update(app, process, runtime) is False
+    assert len(runtime['results']) == 2
+
+    # simulate manual advance
+    runtime['results'][1]['end'] = runtime['results'][1]['start'] + 100
+    runtime['results'].append({
+        'name': process['steps'][2]['name'],
+        'index': 2,
+        'start': None,
+        'end': None,
+        'logs': [],
+    })
+
     # The next step is empty - runtime should end
     assert await updates.update(app, process, runtime) is True
     assert runtime['end'] is not None

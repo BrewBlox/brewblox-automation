@@ -20,6 +20,7 @@ setup(
     install_requires=[
         'brewblox-service',
         'schema',
+        'aiohttp-sse',
     ],
     python_requires='>=3.7',
     setup_requires=['setuptools_scm'],
