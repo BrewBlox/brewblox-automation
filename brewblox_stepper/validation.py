@@ -13,6 +13,7 @@ MILLI_DATE = Or(None, And(int, lambda v: v > 1e11))
 
 _process = Schema({
     'id': str,
+    'title': str,
     'steps': [{
         'name': str,
         'actions': [
