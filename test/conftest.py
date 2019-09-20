@@ -72,6 +72,7 @@ def client(app, aiohttp_client, loop):
 def process():
     return {
         'id': 'test-process',
+        'title': 'Test process',
         'steps': [
             {
                 'name': 'step-one',
