@@ -131,7 +131,7 @@ async def test_process_exit(app, client, process, conditions_mock):
     await response(client.post('/process', json=process))
     await response(client.post('/start/test-process'))
 
-    await response(client.post('/exit/test-process', json={}))
-    await response(client.post('/exit/test-process', json={}))
-    await response(client.post('/exit/dummy', json={}), 500)
+    await response(client.delete('/runtime/test-process', json={}))
+    await response(client.delete('/runtime/test-process', json={}))
+    await response(client.delete('/runtime/dummy', json={}), 500)
     assert [] == await response(client.get('/runtime'))

@@ -267,15 +267,15 @@ async def read_runtime(request: web.Request) -> web.Response:
     )
 
 
-@routes.post('/exit/{id}')
-async def exit(request: web.Request) -> web.Response:
+@routes.delete('/runtime/{id}')
+async def exit_runtime(request: web.Request) -> web.Response:
     """
     ---
     summary: Exit runtime
     tags:
     - Stepper
     - Process
-    operationId: process.exit
+    operationId: process.runtime.exit
     produces:
     - application/json
     parameters:
@@ -286,13 +286,6 @@ async def exit(request: web.Request) -> web.Response:
         description: Process ID
         schema:
             type: string
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
     """
     return web.json_response(
         await store.get_runtime_store(request.app).exit(
