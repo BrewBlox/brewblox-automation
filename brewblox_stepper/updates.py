@@ -5,7 +5,7 @@ Periodically runs an update function for all active processes
 import asyncio
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler, strex
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_stepper import actions, conditions, store, utils
 
@@ -72,65 +72,27 @@ async def update(app, process, runtime) -> bool:
     return changed
 
 
-class Updater(features.ServiceFeature):
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        self._task: asyncio.Task = None
+class Updater(repeater.RepeaterFeature):
 
-    def __str__(self):
-        return f'{type(self).__name__}'
+    async def prepare(self):
+        self.interval = self.app['config']['update_interval']
 
-    @property
-    def active(self):
-        return bool(self._task and not self._task.done())
+        self.process_store = store.get_process_store(self.app)
+        self.runtime_store = store.get_runtime_store(self.app)
 
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        self._task = await scheduler.create_task(app, self._run())
+        await self.process_store.ready.wait()
+        await self.runtime_store.ready.wait()
 
-    async def shutdown(self, _):
-        await scheduler.cancel_task(self.app, self._task)
-        self._task = None
+        LOGGER.info(f'Started {self}')
 
-    async def _run(self):
-        try:
-            interval = self.app['config']['update_interval']
+    async def run(self):
+        await asyncio.sleep(self.interval)
 
-            process_store = store.get_process_store(self.app)
-            runtime_store = store.get_runtime_store(self.app)
-            last_ok = True
+        changed = False
 
-            await process_store.ready.wait()
-            await runtime_store.ready.wait()
+        for runtime in self.runtime_store.config.values():
+            process = self.process_store.config[runtime['id']]
+            changed = changed or await update(self.app, process, runtime)
 
-            LOGGER.info(f'Started {self}')
-
-        except asyncio.CancelledError as ex:  # pragma: no cover
-            raise ex
-
-        except Exception as ex:  # pragma: no cover
-            LOGGER.error(strex(ex))
-            raise ex
-
-        while True:
-            try:
-                await asyncio.sleep(interval)
-
-                changed = False
-
-                for runtime in runtime_store.config.values():
-                    process = process_store.config[runtime['id']]
-                    changed = changed or await update(self.app, process, runtime)
-
-                if changed:
-                    await runtime_store.write_store()
-
-                last_ok = True
-
-            except asyncio.CancelledError as ex:
-                raise ex
-
-            except Exception as ex:
-                if last_ok:
-                    LOGGER.error(strex(ex))
-                    last_ok = False
+        if changed:
+            await self.runtime_store.write_store()
