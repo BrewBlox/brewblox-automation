@@ -4,7 +4,7 @@ Schema validation for incoming blobs of data
 
 from schema import And, Or, Schema
 
-from brewblox_stepper import actions, conditions, responses
+from brewblox_stepper import actions, conditions
 
 # Dates are either not set (None), or ballpark correct for millisecond
 # 1e11 is Mar 03 1973 in milliseconds, and Nov 16 5138 in seconds
@@ -23,13 +23,6 @@ _process = Schema({
             },
                 actions.is_valid)
         ],
-        'responses': [
-            And({
-                'type': str,
-                'opts': dict,
-            },
-                responses.is_valid)
-        ],
         'conditions': [
             And({
                 'type': str,
@@ -37,7 +30,12 @@ _process = Schema({
             },
                 conditions.is_valid)
         ],
-    }]
+        'annotations': [{
+            'type': str,
+            'title': str,
+            'message': str,
+        }],
+    }],
 })
 
 

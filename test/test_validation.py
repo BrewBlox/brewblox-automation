@@ -23,11 +23,6 @@ async def test_validate_process(process):
     with pytest.raises(SchemaError):
         validation.validate_process(unknown_action)
 
-    unknown_resp = deepcopy(process)
-    unknown_resp['steps'][0]['responses'].append(unexpected)
-    with pytest.raises(SchemaError):
-        validation.validate_process(unknown_resp)
-
     unknown_condition = deepcopy(process)
     unknown_condition['steps'][0]['conditions'].append(unexpected)
     with pytest.raises(SchemaError):

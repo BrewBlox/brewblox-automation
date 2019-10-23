@@ -54,8 +54,8 @@ async def test_crud(app, client, process):
     edited['steps'].append({
         'name': 'step-three',
         'actions': [],
-        'responses': [],
-        'conditions': []
+        'conditions': [],
+        'annotations': [],
     })
     assert edited == await response(client.put('/process/test-process', json=edited))
     assert [edited] == await response(client.get('/process'))
@@ -104,7 +104,6 @@ async def test_process_read(app, client, process, conditions_mock):
     await response(client.post('/start/test-process'))
     rt = await response(client.post('/advance/test-process', json={'index': 1}))
     rt['conditions'] = ANY
-    rt['responses'] = []
 
     assert rt == await response(client.get('/runtime/test-process'))
     await response(client.get('/runtime/dummy'), 500)
@@ -118,10 +117,6 @@ async def test_runtime_read(app, client, process, conditions_mock):
 
     resp = await response(client.get('/runtime/test-process'))
     assert [resp] == await response(client.get('/runtime'))
-    assert resp['responses'] == [{
-        'title': 'VERY IMPORTANT',
-        'message': 'Memo: one shrubbery',
-    }]
     assert resp['conditions'] == [False, False, False]
 
     await response(client.get('/runtime/dummy'), 500)

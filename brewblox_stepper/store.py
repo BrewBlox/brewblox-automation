@@ -9,7 +9,7 @@ from functools import wraps
 from aiohttp import web
 from brewblox_service import brewblox_logger, couchdb_client, features, strex
 
-from brewblox_stepper import conditions, responses, utils, validation
+from brewblox_stepper import conditions, utils, validation
 
 DB_NAME = 'brewblox-stepper'
 PROCESS_DOCUMENT = 'stepper-process'
@@ -235,10 +235,6 @@ class RuntimeStore(Datastore):
 
         return {
             **runtime,
-            'responses': [
-                await responses.respond(self.app, resp, runtime)
-                for resp in step['responses']
-            ],
             'conditions': [
                 await conditions.check(self.app, cond, runtime)
                 for cond in step['conditions']

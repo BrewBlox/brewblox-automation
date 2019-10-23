@@ -13,11 +13,11 @@ LOGGER = brewblox_logger(__name__)
 
 
 def setup(app: web.Application):
-    features.add(app, Updater(app))
+    features.add(app, StepRunner(app))
 
 
-def get_updater(app: web.Application):
-    return features.get(app, Updater)
+def get_runner(app: web.Application) -> 'StepRunner':
+    return features.get(app, StepRunner)
 
 
 async def update(app, process, runtime) -> bool:
@@ -72,7 +72,7 @@ async def update(app, process, runtime) -> bool:
     return changed
 
 
-class Updater(repeater.RepeaterFeature):
+class StepRunner(repeater.RepeaterFeature):
 
     async def prepare(self):
         self.interval = self.app['config']['update_interval']
