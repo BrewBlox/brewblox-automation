@@ -10,9 +10,9 @@ from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_stepper import store, updates, utils, validation
+from brewblox_stepper import runner, store, utils, validation
 
-TESTED = updates.__name__
+TESTED = runner.__name__
 
 
 @pytest.fixture
@@ -21,14 +21,14 @@ async def app(app, loop):
     http_client.setup(app)
     scheduler.setup(app)
     store.setup(app)
-    updates.setup(app)
+    runner.setup(app)
 
     return app
 
 
 @pytest.fixture
 async def update_spy(mocker):
-    s = mocker.spy(updates, 'update')
+    s = mocker.spy(runner, 'update')
     return s
 
 
@@ -38,10 +38,10 @@ async def update_mock(mocker):
     return m
 
 
-async def test_updates(app, client, update_mock, process):
+async def test_runner(app, client, update_mock, process):
     process_store = store.get_process_store(app)
     runtime_store = store.get_runtime_store(app)
-    updater = updates.get_updater(app)
+    updater = runner.get_runner(app)
 
     await runtime_store.ready.wait()
     await asyncio.sleep(0.1)
@@ -58,7 +58,7 @@ async def test_updates(app, client, update_mock, process):
 async def test_mocked_update(app, client, mocker, update_mock, process):
     process_store = store.get_process_store(app)
     runtime_store = store.get_runtime_store(app)
-    updater = updates.get_updater(app)
+    updater = runner.get_runner(app)
 
     s = mocker.spy(runtime_store, 'write_store')
 
@@ -72,7 +72,7 @@ async def test_mocked_update(app, client, mocker, update_mock, process):
 async def test_updater_errors(app, client, update_mock, process):
     process_store = store.get_process_store(app)
     runtime_store = store.get_runtime_store(app)
-    updater = updates.get_updater(app)
+    updater = runner.get_runner(app)
 
     await process_store.create(process)
     await runtime_store.start('test-process')
@@ -110,11 +110,11 @@ async def test_update_func(app, client, process, aresponses: ResponsesMockServer
         web.json_response({})
     )
     # Run initial actions for this step
-    assert await updates.update(app, process, runtime) is True
+    assert await runner.update(app, process, runtime) is True
     assert runtime['results'][0]['start'] > 1e11
 
     # No changes
-    assert await updates.update(app, process, runtime) is False
+    assert await runner.update(app, process, runtime) is False
 
     # Satisfy the TimeElapsed and BlockValue conditions
     # Note we did not have to add a response for earlier block gets
@@ -126,13 +126,13 @@ async def test_update_func(app, client, process, aresponses: ResponsesMockServer
     runtime['results'][0]['start'] -= 2000
 
     # Update - will automatically advance to next step
-    assert await updates.update(app, process, runtime) is True
+    assert await runner.update(app, process, runtime) is True
     assert len(runtime['results']) == 2
 
     # This step contains a ManualAdvance condition
-    assert await updates.update(app, process, runtime) is True  # set start, run actions
-    assert await updates.update(app, process, runtime) is False
-    assert await updates.update(app, process, runtime) is False
+    assert await runner.update(app, process, runtime) is True  # set start, run actions
+    assert await runner.update(app, process, runtime) is False
+    assert await runner.update(app, process, runtime) is False
     assert len(runtime['results']) == 2
 
     # simulate manual advance
@@ -146,8 +146,8 @@ async def test_update_func(app, client, process, aresponses: ResponsesMockServer
     })
 
     # The next step is empty - runtime should end
-    assert await updates.update(app, process, runtime) is True
+    assert await runner.update(app, process, runtime) is True
     assert runtime['end'] is not None
 
     # Done, no changes
-    assert await updates.update(app, process, runtime) is False
+    assert await runner.update(app, process, runtime) is False

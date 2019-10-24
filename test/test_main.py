@@ -1,5 +1,5 @@
 from brewblox_stepper import __main__ as main
-from brewblox_stepper import store, updates
+from brewblox_stepper import runner, store
 
 TESTED = main.__name__
 
@@ -13,5 +13,5 @@ def test_main(mocker, app):
     assert None not in [
         store.get_process_store(app),
         store.get_runtime_store(app),
-        updates.get_updater(app)
+        runner.get_runner(app)
     ]

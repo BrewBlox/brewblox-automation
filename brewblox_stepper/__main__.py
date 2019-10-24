@@ -5,7 +5,7 @@ Application entrypoint
 from brewblox_service import (brewblox_logger, couchdb_client, events,
                               http_client, scheduler, service)
 
-from brewblox_stepper import api, sse, store, updates
+from brewblox_stepper import api, runner, sse, store
 
 LOGGER = brewblox_logger(__name__)
 
@@ -40,7 +40,7 @@ def main():
     couchdb_client.setup(app)
 
     store.setup(app)
-    updates.setup(app)
+    runner.setup(app)
     api.setup(app)
     sse.setup(app)
 

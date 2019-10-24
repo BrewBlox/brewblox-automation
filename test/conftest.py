@@ -88,15 +88,6 @@ def process():
                         }
                     }
                 ],
-                'responses': [
-                    {
-                        'type': 'Notification',
-                        'opts': {
-                            'title': 'VERY IMPORTANT',
-                            'message': 'Memo: one shrubbery',
-                        }
-                    }
-                ],
                 'conditions': [
                     {
                         'type': 'TimeAbsolute',
@@ -121,23 +112,30 @@ def process():
                         }
                     }
                 ],
+                'annotations': [
+                    {
+                        'type': 'Notification',
+                        'title': 'VERY IMPORTANT',
+                        'message': 'Memo: one shrubbery',
+                    }
+                ],
             },
             {
                 'name': 'step-two',
                 'actions': [],
-                'responses': [],
                 'conditions': [
                     {
                         'type': 'ManualAdvance',
                         'opts': {},
                     }
                 ],
+                'annotations': [],
             },
             {
                 'name': 'step-empty',
                 'actions': [],
-                'responses': [],
                 'conditions': [],
+                'annotations': [],
             }
         ]
     }
