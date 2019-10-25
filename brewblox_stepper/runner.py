@@ -3,6 +3,7 @@ Periodically runs an update function for all active processes
 """
 
 import asyncio
+from uuid import uuid4
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
@@ -20,53 +21,60 @@ def get_runner(app: web.Application) -> 'StepRunner':
     return features.get(app, StepRunner)
 
 
-async def update(app, process, runtime) -> bool:
+async def update(app, runtime) -> bool:
     if runtime['end'] is not None:
         return False  # Runtime is done
 
-    current = runtime['results'][-1]
-    step = process['steps'][current['index']]
     changed = False
+    process = runtime['process']
+    proc_id = process['id']
+    proc_title = process['title']
+    curr_result = runtime['results'][-1]
+    curr_pos, curr_step = next(  # pragma: no cover
+        (i, step) for (i, step) in enumerate(process['steps'])
+        if step['id'] == curr_result['step'])
 
-    if current['start'] is None:
+    if curr_result['start'] is None:
         changed = True
 
         try:
-            for action in step['actions']:
+            for action in curr_step['actions']:
                 await actions.run(app, action, runtime)
-            current['start'] = utils.now()
+            curr_result['start'] = utils.now()
         except Exception as ex:  # pragma: no cover
-            LOGGER.error(f'Action error in {process["id"]} {strex(ex)}')
+            LOGGER.error(f'Action error in {proc_title} ({proc_id}) {proc_id} {strex(ex)}')
 
     # Short-circuit condition evaluation
     done = True
     try:
-        for condition in step['conditions']:
+        for condition in curr_step['conditions']:
             if not await conditions.check(app, condition, runtime):
                 done = False
                 break
     except Exception as ex:  # pragma: no cover
-        LOGGER.error(f'Condition error in {process["id"]} {strex(ex)}')
+        LOGGER.error(f'Condition error in {proc_title} ({proc_id}) {strex(ex)}')
         done = False
 
     if done:
         changed = True
-        current['end'] = utils.now()
-        LOGGER.info(f'Step complete: {process["id"]} / {current["name"]}')
+        curr_result['end'] = utils.now()
+        curr_name = curr_result['title']
+        LOGGER.info(f'Step complete: {proc_title} ({proc_id}) / {curr_name}')
 
         try:
-            next_index = current['index'] + 1
-            next_step = process['steps'][next_index]
+            next_pos = curr_pos + 1
+            next_step = process['steps'][next_pos]
             runtime['results'].append({
-                'name': next_step['name'],
-                'index': next_index,
+                'id': str(uuid4()),
+                'title': next_step['title'],
+                'step': next_step['id'],
                 'start': None,  # run actions next update
                 'end': None,
                 'logs': [],
             })
 
         except IndexError:
-            LOGGER.info(f'Process complete: {process["id"]}')
+            LOGGER.info(f'Process complete: {proc_title} ({proc_id})')
             runtime['end'] = utils.now()
 
     return changed
@@ -77,10 +85,7 @@ class StepRunner(repeater.RepeaterFeature):
     async def prepare(self):
         self.interval = self.app['config']['update_interval']
 
-        self.process_store = store.get_process_store(self.app)
         self.runtime_store = store.get_runtime_store(self.app)
-
-        await self.process_store.ready.wait()
         await self.runtime_store.ready.wait()
 
         LOGGER.info(f'Started {self}')
@@ -91,8 +96,7 @@ class StepRunner(repeater.RepeaterFeature):
         changed = False
 
         for runtime in self.runtime_store.config.values():
-            process = self.process_store.config[runtime['id']]
-            changed = changed or await update(self.app, process, runtime)
+            changed = changed or await update(self.app, runtime)
 
         if changed:
             await self.runtime_store.write_store()

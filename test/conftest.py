@@ -4,6 +4,7 @@ Any fixtures declared here are available to all test functions in this directory
 """
 
 import logging
+from copy import deepcopy
 
 import pytest
 from brewblox_service import service
@@ -75,7 +76,8 @@ def process():
         'title': 'Test process',
         'steps': [
             {
-                'name': 'step-one',
+                'id': 'step-one-id',
+                'title': 'step-one',
                 'actions': [
                     {
                         'type': 'BlockPatch',
@@ -112,16 +114,16 @@ def process():
                         }
                     }
                 ],
-                'annotations': [
+                'notes': [
                     {
-                        'type': 'Notification',
                         'title': 'VERY IMPORTANT',
                         'message': 'Memo: one shrubbery',
                     }
                 ],
             },
             {
-                'name': 'step-two',
+                'id': 'step-two-id',
+                'title': 'step-two',
                 'actions': [],
                 'conditions': [
                     {
@@ -129,28 +131,33 @@ def process():
                         'opts': {},
                     }
                 ],
-                'annotations': [],
+                'notes': [],
             },
             {
-                'name': 'step-empty',
+                'id': 'step-empty-id',
+                'title': 'step-empty',
                 'actions': [],
                 'conditions': [],
-                'annotations': [],
+                'notes': [],
             }
         ]
     }
 
 
 @pytest.fixture
-def runtime():
+def runtime(process):
     return {
         'id': 'test-process',
+        'title': 'Test process',
         'start': 1567760830490,
         'end': None,
+        'process': deepcopy(process),
+        'tasks': [],
         'results': [
             {
-                'name': 'step-one',
-                'index': 0,
+                'id': 'result-one-id',
+                'title': 'step-one',
+                'step': 'step-one-id',
                 'start': 1567760830490,
                 'end': None,
                 'logs': [

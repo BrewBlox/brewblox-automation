@@ -15,7 +15,8 @@ _process = Schema({
     'id': str,
     'title': str,
     'steps': [{
-        'name': str,
+        'id': str,
+        'title': str,
         'actions': [
             And({
                 'type': str,
@@ -30,8 +31,7 @@ _process = Schema({
             },
                 conditions.is_valid)
         ],
-        'annotations': [{
-            'type': str,
+        'notes': [{
             'title': str,
             'message': str,
         }],
@@ -41,11 +41,20 @@ _process = Schema({
 
 _runtime = Schema({
     'id': str,
+    'title': str,
     'start': MILLI_DATE,
     'end': MILLI_DATE,
+    'process': _process,
+    'tasks': [{
+        'ref': str,
+        'title': str,
+        'message': str,
+        'done': bool,
+    }],
     'results': [{
-        'name': str,
-        'index': And(int, lambda v: v >= 0),
+        'id': str,
+        'title': str,
+        'step': str,
         'start': MILLI_DATE,
         'end': MILLI_DATE,
         'logs': [{

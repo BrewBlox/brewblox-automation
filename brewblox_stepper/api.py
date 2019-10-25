@@ -188,11 +188,38 @@ async def start(request: web.Request) -> web.Response:
     )
 
 
+@routes.post('/stop/{id}')
+async def stop(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Stop a Runtime
+    tags:
+    - Stepper
+    - Process
+    operationId: process.stop
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: Process ID
+        schema:
+            type: string
+    """
+    return web.json_response(
+        await store.get_runtime_store(request.app).stop(
+            request.match_info['id']
+        )
+    )
+
+
 @routes.post('/advance/{id}')
 async def advance(request: web.Request) -> web.Response:
     """
     ---
-    summary: Advance to Process Step
+    summary: Advance to Runtime Step
     tags:
     - Stepper
     - Process
