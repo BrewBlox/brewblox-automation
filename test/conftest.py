@@ -84,6 +84,7 @@ def process():
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
+                            'type': 'ActuatorPwm',
                             'data': {
                                 'desiredSetting': 0
                             }
@@ -108,6 +109,7 @@ def process():
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
+                            'type': 'ActuatorPwm',
                             'key': 'value[degC]',
                             'operator': 'ge',
                             'value': 50,

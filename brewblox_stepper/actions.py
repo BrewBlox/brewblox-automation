@@ -26,6 +26,7 @@ class BlockPatch(ActionBase):
     _schema = Schema({
         'block': str,
         'service': str,
+        'type': str,
         'data': {str: lambda v: True},
     })
 
