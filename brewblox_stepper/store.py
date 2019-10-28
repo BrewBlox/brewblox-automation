@@ -176,10 +176,11 @@ class RuntimeStore(Datastore):
              if step['id'] == id))
 
     @when_ready
-    async def start(self, proc_id: str):
-        process = get_process_store(self.app).config.get(proc_id)
-        if not process:
-            raise KeyError(f'Process {proc_id} is not defined')
+    async def start(self, process: dict):
+        validation.validate_process(process)
+        # process = get_process_store(self.app).config.get(proc_id)
+        # if not process:
+        #     raise KeyError(f'Process {proc_id} is not defined')
 
         step = process['steps'][0]
         runtime = {

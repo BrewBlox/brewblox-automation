@@ -161,7 +161,7 @@ async def remove(request: web.Request) -> web.Response:
     )
 
 
-@routes.post('/start/{id}')
+@routes.post('/start')
 async def start(request: web.Request) -> web.Response:
     """
     ---
@@ -174,16 +174,16 @@ async def start(request: web.Request) -> web.Response:
     - application/json
     parameters:
     -
-        name: id
-        in: path
+        name: body
+        in: body
+        description: object
         required: true
-        description: Process ID
         schema:
-            type: string
+            type: object
     """
     return web.json_response(
         await store.get_runtime_store(request.app).start(
-            request.match_info['id']
+            await request.json()
         )
     )
 
