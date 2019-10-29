@@ -17,16 +17,21 @@ _process = Schema({
     'steps': [{
         'id': str,
         'title': str,
+        'enabled': bool,
         'actions': [
             And({
+                'id': str,
                 'type': str,
+                'enabled': bool,
                 'opts': dict,
             },
                 actions.is_valid)
         ],
         'conditions': [
             And({
+                'id': str,
                 'type': str,
+                'enabled': bool,
                 'opts': dict,
             },
                 conditions.is_valid)

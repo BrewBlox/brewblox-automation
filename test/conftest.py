@@ -78,8 +78,11 @@ def process():
             {
                 'id': 'step-one-id',
                 'title': 'step-one',
+                'enabled': True,
                 'actions': [
                     {
+                        'id': 'patch-one-id',
+                        'enabled': True,
                         'type': 'BlockPatch',
                         'opts': {
                             'block': 'pwm-1',
@@ -93,19 +96,25 @@ def process():
                 ],
                 'conditions': [
                     {
+                        'id': 'abs-condition-id',
+                        'enabled': True,
                         'type': 'TimeAbsolute',
                         'opts': {
                             'time': 1567760830490,
                         }
                     },
                     {
+                        'id': 'elapsed-condition-id',
                         'type': 'TimeElapsed',
+                        'enabled': True,
                         'opts': {
                             'duration': 1000,
                         }
                     },
                     {
+                        'id': 'value-condition-id',
                         'type': 'BlockValue',
+                        'enabled': True,
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
@@ -126,9 +135,12 @@ def process():
             {
                 'id': 'step-two-id',
                 'title': 'step-two',
+                'enabled': True,
                 'actions': [],
                 'conditions': [
                     {
+                        'id': 'manual-condition-id',
+                        'enabled': True,
                         'type': 'ManualAdvance',
                         'opts': {},
                     }
@@ -138,6 +150,7 @@ def process():
             {
                 'id': 'step-empty-id',
                 'title': 'step-empty',
+                'enabled': True,
                 'actions': [],
                 'conditions': [],
                 'notes': [],
@@ -149,7 +162,7 @@ def process():
 @pytest.fixture
 def runtime(process):
     return {
-        'id': 'test-process',
+        'id': 'runtime-id',
         'title': 'Test process',
         'start': 1567760830490,
         'end': None,

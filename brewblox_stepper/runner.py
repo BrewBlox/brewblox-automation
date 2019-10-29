@@ -85,7 +85,7 @@ class StepRunner(repeater.RepeaterFeature):
     async def prepare(self):
         self.interval = self.app['config']['update_interval']
 
-        self.runtime_store = store.get_runtime_store(self.app)
+        self.runtime_store = store.get_store(self.app)
         await self.runtime_store.ready.wait()
 
         LOGGER.info(f'Started {self}')

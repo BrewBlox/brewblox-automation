@@ -44,7 +44,7 @@ class SSEPublisher(features.ServiceFeature):
         self._queues.add(queue)
         try:
             if self._current is None:
-                self._current = await store.get_runtime_store(self.app).all()
+                self._current = await store.get_store(self.app).all()
             await queue.put(self._current)
 
         except asyncio.CancelledError:  # pragma: no cover
@@ -69,7 +69,7 @@ class SSEPublisher(features.ServiceFeature):
         LOGGER.info(f'Starting {self}')
 
         try:
-            runtime_store: store.RuntimeStore = store.get_runtime_store(self.app)
+            runtime_store: store.RuntimeStore = store.get_store(self.app)
 
         except Exception as ex:  # pragma: no cover
             LOGGER.error(strex(ex), exc_info=True)

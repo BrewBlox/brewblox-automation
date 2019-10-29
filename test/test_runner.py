@@ -39,9 +39,8 @@ async def update_mock(mocker):
     return m
 
 
-async def test_runner(app, client, update_mock, process):
-    process_store = store.get_process_store(app)
-    runtime_store = store.get_runtime_store(app)
+async def test_runner(app, client, update_mock, runtime):
+    runtime_store = store.get_store(app)
     updater = runner.get_runner(app)
 
     await runtime_store.ready.wait()
@@ -49,34 +48,29 @@ async def test_runner(app, client, update_mock, process):
     assert updater.active
     assert update_mock.call_count == 0
 
-    await process_store.create(process)
-    await runtime_store.start('test-process')
+    await runtime_store.create(runtime)
     await asyncio.sleep(0.1)
     assert updater.active
     assert update_mock.call_count > 0
 
 
-async def test_mocked_update(app, client, mocker, update_mock, process):
-    process_store = store.get_process_store(app)
-    runtime_store = store.get_runtime_store(app)
+async def test_mocked_update(app, client, mocker, update_mock, runtime):
+    runtime_store = store.get_store(app)
     updater = runner.get_runner(app)
 
     s = mocker.spy(runtime_store, 'write_store')
 
-    await process_store.create(process)
-    await runtime_store.start('test-process')
+    await runtime_store.create(runtime)
     await asyncio.sleep(0.1)
     assert updater.active
     assert s.call_count > 2  # start, and updates
 
 
-async def test_updater_errors(app, client, update_mock, process):
-    process_store = store.get_process_store(app)
-    runtime_store = store.get_runtime_store(app)
+async def test_updater_errors(app, client, update_mock, runtime):
+    runtime_store = store.get_store(app)
     updater = runner.get_runner(app)
 
-    await process_store.create(process)
-    await runtime_store.start('test-process')
+    await runtime_store.create(runtime)
 
     update_mock.side_effect = RuntimeError
     await asyncio.sleep(0.1)

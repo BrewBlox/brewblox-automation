@@ -15,11 +15,11 @@ def setup(app: web.Application):
     app.router.add_routes(routes)
 
 
-@routes.post('/process')
+@routes.post('/runtime')
 async def create(request: web.Request) -> web.Response:
     """
     ---
-    summary: Create new process
+    summary: Create new runtime
     tags:
     - Stepper
     - Process
@@ -28,61 +28,46 @@ async def create(request: web.Request) -> web.Response:
     - application/json
     parameters:
     -
-        in: body
         name: body
-        description: process
+        in: body
+        description: object
         required: true
+        schema:
+            type: object
     """
     return web.json_response(
-        await store.get_process_store(request.app).create(
+        await store.get_store(request.app).create(
             await request.json()
         )
     )
 
 
-@routes.get('/process')
-async def all(request: web.Request) -> web.Response:
+@routes.get('/runtime')
+async def all_runtimes(request: web.Request) -> web.Response:
     """
     ---
-    summary: Return all processes
+    summary: Read all runtimes
     tags:
     - Stepper
     - Process
-    operationId: process.all
+    operationId: runtime.all
     produces:
     - application/json
     """
     return web.json_response(
-        await store.get_process_store(request.app).all()
+        await store.get_store(request.app).all()
     )
 
 
-@routes.delete('/process')
-async def clear(request: web.Request) -> web.Response:
+@routes.get('/runtime/{id}')
+async def read_runtime(request: web.Request) -> web.Response:
     """
     ---
-    summary: Remove all processes
+    summary: Read runtime
     tags:
     - Stepper
     - Process
-    operationId: process.clear
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await store.get_process_store(request.app).clear()
-    )
-
-
-@routes.get('/process/{id}')
-async def read(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read one process
-    tags:
-    - Stepper
-    - Process
-    operationId: process.read
+    operationId: runtime.read
     produces:
     - application/json
     parameters:
@@ -95,50 +80,17 @@ async def read(request: web.Request) -> web.Response:
             type: string
     """
     return web.json_response(
-        await store.get_process_store(request.app).read(
+        await store.get_store(request.app).read(
             request.match_info['id']
         )
     )
 
 
-@routes.put('/process/{id}')
-async def write(request: web.Request) -> web.Response:
+@routes.delete('/runtime/{id}')
+async def remove_runtime(request: web.Request) -> web.Response:
     """
     ---
-    summary: Update one process
-    tags:
-    - Stepper
-    - Process
-    operationId: process.write
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Process ID
-        schema:
-            type: string
-    -
-        in: body
-        name: body
-        description: process
-        required: true
-    """
-    return web.json_response(
-        await store.get_process_store(request.app).write(
-            request.match_info['id'],
-            await request.json()
-        )
-    )
-
-
-@routes.delete('/process/{id}')
-async def remove(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Remove one process
+    summary: Remove runtime
     tags:
     - Stepper
     - Process
@@ -155,62 +107,9 @@ async def remove(request: web.Request) -> web.Response:
             type: string
     """
     return web.json_response(
-        await store.get_process_store(request.app).remove(
-            request.match_info['id']
-        )
-    )
-
-
-@routes.post('/start')
-async def start(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Start a Process
-    tags:
-    - Stepper
-    - Process
-    operationId: process.start
-    produces:
-    - application/json
-    parameters:
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).start(
+        await store.get_store(request.app).remove(
+            request.match_info['id'],
             await request.json()
-        )
-    )
-
-
-@routes.post('/stop/{id}')
-async def stop(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Stop a Runtime
-    tags:
-    - Stepper
-    - Process
-    operationId: process.stop
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Process ID
-        schema:
-            type: string
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).stop(
-            request.match_info['id']
         )
     )
 
@@ -219,7 +118,7 @@ async def stop(request: web.Request) -> web.Response:
 async def advance(request: web.Request) -> web.Response:
     """
     ---
-    summary: Advance to Runtime Step
+    summary: Advance to Process Step
     tags:
     - Stepper
     - Process
@@ -243,39 +142,22 @@ async def advance(request: web.Request) -> web.Response:
             type: object
     """
     return web.json_response(
-        await store.get_runtime_store(request.app).advance(
+        await store.get_store(request.app).advance(
             request.match_info['id'],
             await request.json()
         )
     )
 
 
-@routes.get('/runtime')
-async def all_runtimes(request: web.Request) -> web.Response:
+@routes.post('/stop/{id}')
+async def stop(request: web.Request) -> web.Response:
     """
     ---
-    summary: Read all runtimes
+    summary: Stop a Process
     tags:
     - Stepper
     - Process
-    operationId: process.runtime.all
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).all()
-    )
-
-
-@routes.get('/runtime/{id}')
-async def read_runtime(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read one runtime
-    tags:
-    - Stepper
-    - Process
-    operationId: process.runtime.read
+    operationId: process.stop
     produces:
     - application/json
     parameters:
@@ -288,35 +170,7 @@ async def read_runtime(request: web.Request) -> web.Response:
             type: string
     """
     return web.json_response(
-        await store.get_runtime_store(request.app).read(
+        await store.get_store(request.app).stop(
             request.match_info['id']
-        )
-    )
-
-
-@routes.delete('/runtime/{id}')
-async def exit_runtime(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Exit runtime
-    tags:
-    - Stepper
-    - Process
-    operationId: process.runtime.exit
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Process ID
-        schema:
-            type: string
-    """
-    return web.json_response(
-        await store.get_runtime_store(request.app).exit(
-            request.match_info['id'],
-            await request.json()
         )
     )
