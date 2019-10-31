@@ -5,14 +5,16 @@ Manages processes and their corresponding runtimes
 import asyncio
 from abc import abstractmethod
 from functools import wraps
+from typing import Tuple
+from uuid import uuid4
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, couchdb_client, features, strex
+from schema import Optional, Schema
 
 from brewblox_stepper import conditions, utils, validation
 
 DB_NAME = 'brewblox-stepper'
-PROCESS_DOCUMENT = 'stepper-process'
 RUNTIME_DOCUMENT = 'stepper-runtime'
 READY_WAIT_TIMEOUT_S = 20
 
@@ -20,15 +22,10 @@ LOGGER = brewblox_logger(__name__)
 
 
 def setup(app: web.Application):
-    features.add(app, ProcessStore(app))
     features.add(app, RuntimeStore(app))
 
 
-def get_process_store(app: web.Application) -> 'ProcessStore':
-    return features.get(app, ProcessStore)
-
-
-def get_runtime_store(app: web.Application) -> 'RuntimeStore':
+def get_store(app: web.Application) -> 'RuntimeStore':
     return features.get(app, RuntimeStore)
 
 
@@ -115,123 +112,37 @@ class Datastore(features.ServiceFeature):
                 raise ex
 
 
-class ProcessStore(Datastore):
-
-    @property
-    def document(self):
-        return PROCESS_DOCUMENT
-
-    @when_ready
-    async def create(self, process_data):
-        id = process_data['id']
-        if id in self.config:
-            raise KeyError(f'Process with ID {id} already exists')
-
-        self.config[id] = process_data
-        await self.write_store()
-        return process_data
-
-    @when_ready
-    async def all(self):
-        return [v for v in self.config.values()]
-
-    @when_ready
-    async def clear(self):
-        self.config.clear()
-        await self.write_store()
-
-    @when_ready
-    async def read(self, id: str):
-        return self.config[id]
-
-    @when_ready
-    async def write(self, id: str, process_data):
-        if id not in self.config:
-            raise KeyError(f'Process with ID {id} not found')
-        self.config[id] = process_data
-        await self.write_store()
-        return process_data
-
-    @when_ready
-    async def remove(self, id: str):
-        if id not in self.config:
-            raise KeyError(f'Process with ID {id} not found')
-        del self.config[id]
-        await self.write_store()
-
-
 class RuntimeStore(Datastore):
 
     @property
     def document(self):
         return RUNTIME_DOCUMENT
 
-    @when_ready
-    async def start(self, id: str):
-        process = get_process_store(self.app).config.get(id)
-        if not process:
-            raise KeyError(f'Process {id} is not defined')
-        if id in self.config:
-            raise RuntimeError(f'Runtime {id} is already active')
+    def _find(self, steps, id) -> Tuple[int, dict]:
+        return next(  # pragma: no cover
+            ((i, step) for (i, step) in enumerate(steps)
+             if step['id'] == id))
 
-        runtime = {
-            'id': id,
-            'start': utils.now(),
-            'end': None,
-            'results': [
-                {
-                    'name': process['steps'][0]['name'],
-                    'index': 0,
-                    'start': None,
-                    'end': None,
-                    'logs': [],
-                }
-            ],
-        }
+    @when_ready
+    async def create(self, runtime: dict):
         validation.validate_runtime(runtime)
-        self.config[id] = runtime
+        if runtime['id'] in self.config:
+            raise KeyError(f'Runtime {runtime["id"]} / {runtime["title"]} already exists')
+        self.config[runtime['id']] = runtime
         await self.write_store()
-        return self.config[id]
-
-    @when_ready
-    async def advance(self, id: str, args):
-        process = get_process_store(self.app).config.get(id)
-        if not process:
-            raise KeyError(f'Process {id} is not defined')
-        runtime = self.config.get(id)
-        if not runtime:
-            raise KeyError(f'Process {id} not not started')
-
-        current = runtime['results'][-1]
-        index = args.get('index') or current['index'] + 1
-        current['end'] = current['end'] or utils.now()
-        LOGGER.info(f'{index}, {current}')
-
-        if index >= len(process['steps']):
-            raise KeyError(f'Process {id} does not contain a step with index {index}')
-
-        runtime['results'].append({
-            'name': process['steps'][index]['name'],
-            'index': index,
-            'start': None,
-            'end': None,
-            'logs': [],
-        })
-
-        await self.write_store()
-        return self.config[id]
+        return runtime
 
     @when_ready
     async def read(self, id: str):
-        process = get_process_store(self.app).config.get(id)
         runtime = self.config.get(id)
-        if not process:
-            raise KeyError(f'Process {id} is not defined')
         if not runtime:
             raise KeyError(f'Runtime {id} not found or not started')
 
-        results = runtime['results'][-1]
-        step = process['steps'][results['index']]
+        if runtime['end'] is not None:
+            return runtime
+
+        result = runtime['results'][-1]
+        pos, step = self._find(runtime['process']['steps'], result['step'])
 
         return {
             **runtime,
@@ -249,10 +160,62 @@ class RuntimeStore(Datastore):
         return res
 
     @when_ready
-    async def exit(self, id: str, args):
-        if id not in get_process_store(self.app).config:
-            raise KeyError(f'Process {id} is not defined')
+    async def remove(self, id: str, args):
         if id not in self.config:
             return
         del self.config[id]
         await self.write_store()
+
+    _advance_args = Schema({
+        Optional('pos'): int
+    })
+
+    @when_ready
+    async def advance(self, id: str, args):
+        self._advance_args.validate(args)
+
+        runtime = self.config.get(id)
+        if runtime is None:
+            raise KeyError(f'Runtime {id} not found')
+
+        process = runtime['process']
+        steps = process['steps']
+        curr_result = runtime['results'][-1]
+        curr_pos, curr_step = self._find(steps, curr_result['step'])
+        next_pos = args.get('pos') or curr_pos + 1
+
+        LOGGER.info(f'{curr_result}, {next_pos}')
+
+        try:
+            next_step = steps[next_pos]
+        except IndexError:
+            raise KeyError(f'Invalid next step in process {process["title"]}')
+
+        curr_result['end'] = curr_result['end'] or utils.now()
+        runtime['results'].append({
+            'id': str(uuid4()),
+            'title': next_step['title'],
+            'step': next_step['id'],
+            'start': None,
+            'end': None,
+            'logs': [],
+        })
+
+        await self.write_store()
+        return self.config[id]
+
+    @when_ready
+    async def stop(self, id: str):
+        runtime = self.config.get(id)
+        if not runtime:
+            raise KeyError(f'Runtime {id} not found')
+
+        if runtime['end'] is not None:
+            return runtime
+
+        runtime['end'] = utils.now()
+        result = runtime['results'][-1]
+        result['end'] = result['end'] or utils.now()
+
+        await self.write_store()
+        return runtime

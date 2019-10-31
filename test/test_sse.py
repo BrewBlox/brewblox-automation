@@ -51,16 +51,15 @@ async def app(app, loop):
     return app
 
 
-async def test_immediate_response(app, client, publisher, process):
-    await response(client.post('/process', json=process))
-    await response(client.post('/start/test-process'))
+async def test_immediate_response(app, client, publisher, runtime):
+    await response(client.post('/runtime', json=runtime))
 
     q1, q2 = asyncio.Queue(), asyncio.Queue()
     await publisher.subscribe(q1)
     await publisher.subscribe(q2)
-    statuses = await response(client.get('/runtime'))
-    assert q1.get_nowait() == statuses
-    assert q2.get_nowait() == statuses
+    runtimes = await response(client.get('/runtime'))
+    assert q1.get_nowait() == runtimes
+    assert q2.get_nowait() == runtimes
 
 
 async def test_empty_response(app, client, publisher):
@@ -69,9 +68,8 @@ async def test_empty_response(app, client, publisher):
     assert q.get_nowait() == []
 
 
-async def test_error_response(conditions_mock, app, client, publisher, process):
-    await response(client.post('/process', json=process))
-    await response(client.post('/start/test-process'))
+async def test_error_response(conditions_mock, app, client, publisher, runtime):
+    await response(client.post('/runtime', json=runtime))
 
     conditions_mock.side_effect = RuntimeError
     q = asyncio.Queue()
@@ -81,14 +79,14 @@ async def test_error_response(conditions_mock, app, client, publisher, process):
         q.get_nowait()
 
 
-async def test_sse_response(app, client, process):
+async def test_sse_response(app, client, runtime):
     async with client.get('/sse/runtime') as resp:
         expected = 'data: []'
         chunk = await resp.content.read(len(expected))
         assert chunk.decode() == expected
 
 
-async def test_sse_updates(short_interval, app, client, process):
+async def test_sse_updates(short_interval, app, client, runtime):
     async with client.get('/sse/runtime') as resp:
         expected = 'data: []\r\n\r\n'
 
@@ -98,19 +96,17 @@ async def test_sse_updates(short_interval, app, client, process):
         chunk = await resp.content.read(len(expected))
         assert chunk.decode() == expected
 
-    await response(client.post('/process', json=process))
-    await response(client.post('/start/test-process'))
-    statuses = await response(client.get('/runtime'))
+    await response(client.post('/runtime', json=runtime))
+    runtimes = await response(client.get('/runtime'))
 
     async with client.get('/sse/runtime') as resp:
-        expected = f'data: {json.dumps(statuses)}'
+        expected = f'data: {json.dumps(runtimes)}'
         chunk = await resp.content.read(len(expected))
         assert chunk.decode() == expected
 
 
-async def test_sse_error(short_interval, app, client, process, conditions_mock):
-    await response(client.post('/process', json=process))
-    await response(client.post('/start/test-process'))
+async def test_sse_error(short_interval, app, client, runtime, conditions_mock):
+    await response(client.post('/runtime', json=runtime))
 
     conditions_mock.side_effect = RuntimeError
 

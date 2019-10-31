@@ -11,7 +11,6 @@ def test_main(mocker, app):
     main.main()
 
     assert None not in [
-        store.get_process_store(app),
-        store.get_runtime_store(app),
+        store.get_store(app),
         runner.get_runner(app)
     ]

@@ -60,6 +60,7 @@ class BlockValue(ConditionBase):
     _schema = Schema({
         'block': str,
         'service': str,
+        'type': str,
         'key': str,
         'operator': Or('lt', 'le', 'eq', 'ne', 'ge', 'gt'),
         'value': lambda v: True,

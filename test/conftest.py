@@ -4,6 +4,7 @@ Any fixtures declared here are available to all test functions in this directory
 """
 
 import logging
+from copy import deepcopy
 
 import pytest
 from brewblox_service import service
@@ -75,13 +76,18 @@ def process():
         'title': 'Test process',
         'steps': [
             {
-                'name': 'step-one',
+                'id': 'step-one-id',
+                'title': 'step-one',
+                'enabled': True,
                 'actions': [
                     {
+                        'id': 'patch-one-id',
+                        'enabled': True,
                         'type': 'BlockPatch',
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
+                            'type': 'ActuatorPwm',
                             'data': {
                                 'desiredSetting': 0
                             }
@@ -90,67 +96,83 @@ def process():
                 ],
                 'conditions': [
                     {
+                        'id': 'abs-condition-id',
+                        'enabled': True,
                         'type': 'TimeAbsolute',
                         'opts': {
                             'time': 1567760830490,
                         }
                     },
                     {
+                        'id': 'elapsed-condition-id',
                         'type': 'TimeElapsed',
+                        'enabled': True,
                         'opts': {
                             'duration': 1000,
                         }
                     },
                     {
+                        'id': 'value-condition-id',
                         'type': 'BlockValue',
+                        'enabled': True,
                         'opts': {
                             'block': 'pwm-1',
                             'service': 'sparkey',
+                            'type': 'ActuatorPwm',
                             'key': 'value[degC]',
                             'operator': 'ge',
                             'value': 50,
                         }
                     }
                 ],
-                'annotations': [
+                'notes': [
                     {
-                        'type': 'Notification',
                         'title': 'VERY IMPORTANT',
                         'message': 'Memo: one shrubbery',
                     }
                 ],
             },
             {
-                'name': 'step-two',
+                'id': 'step-two-id',
+                'title': 'step-two',
+                'enabled': True,
                 'actions': [],
                 'conditions': [
                     {
+                        'id': 'manual-condition-id',
+                        'enabled': True,
                         'type': 'ManualAdvance',
                         'opts': {},
                     }
                 ],
-                'annotations': [],
+                'notes': [],
             },
             {
-                'name': 'step-empty',
+                'id': 'step-empty-id',
+                'title': 'step-empty',
+                'enabled': True,
                 'actions': [],
                 'conditions': [],
-                'annotations': [],
+                'notes': [],
             }
         ]
     }
 
 
 @pytest.fixture
-def runtime():
+def runtime(process):
     return {
-        'id': 'test-process',
+        'id': 'runtime-id',
+        'title': 'Test process',
         'start': 1567760830490,
         'end': None,
+        'process': deepcopy(process),
+        'tasks': [],
         'results': [
             {
-                'name': 'step-one',
-                'index': 0,
+                'id': 'result-one-id',
+                'title': 'step-one',
+                'step': 'step-one-id',
                 'start': 1567760830490,
                 'end': None,
                 'logs': [
