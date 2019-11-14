@@ -1,5 +1,5 @@
 """
-Tests brewblox_stepper.api
+Tests brewblox_automation.api
 """
 
 import pytest
@@ -7,7 +7,7 @@ from aiohttp.client_exceptions import ContentTypeError
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_stepper import api, store
+from brewblox_automation import api, store
 
 
 async def response(request, status=200):

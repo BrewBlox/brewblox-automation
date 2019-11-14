@@ -1,5 +1,5 @@
 """
-Tests brewblox_stepper.validation
+Tests brewblox_automation.validation
 """
 
 from copy import deepcopy
@@ -7,7 +7,7 @@ from copy import deepcopy
 import pytest
 from schema import SchemaError
 
-from brewblox_stepper import validation
+from brewblox_automation import validation
 
 
 async def test_validate_process(process):

@@ -9,7 +9,7 @@ from copy import deepcopy
 import pytest
 from brewblox_service import service
 
-from brewblox_stepper.__main__ import create_parser
+from brewblox_automation.__main__ import create_parser
 
 
 @pytest.fixture(scope='session', autouse=True)

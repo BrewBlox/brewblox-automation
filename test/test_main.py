@@ -1,5 +1,5 @@
-from brewblox_stepper import __main__ as main
-from brewblox_stepper import runner, store
+from brewblox_automation import __main__ as main
+from brewblox_automation import runner, store
 
 TESTED = main.__name__
 

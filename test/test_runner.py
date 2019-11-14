@@ -1,5 +1,5 @@
 """
-Tests brewblox_stepper.updater
+Tests brewblox_automation.updater
 """
 
 import asyncio
@@ -11,7 +11,7 @@ from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_stepper import runner, store, utils, validation
+from brewblox_automation import runner, store, utils, validation
 
 TESTED = runner.__name__
 

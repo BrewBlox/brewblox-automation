@@ -18,8 +18,8 @@ ENV SERVICE_INFO=${service_info}
 COPY --from=base /wheeley /wheeley
 COPY ./config /app/config
 
-RUN pip3 install --no-index --find-links=/wheeley brewblox-stepper \
+RUN pip3 install --no-index --find-links=/wheeley brewblox-automation \
     && rm -rf /wheeley \
     && pip3 freeze
 
-ENTRYPOINT ["python3", "-m", "brewblox_stepper"]
+ENTRYPOINT ["python3", "-m", "brewblox_automation"]

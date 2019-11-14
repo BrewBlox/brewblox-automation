@@ -4,7 +4,7 @@ Schema validation for incoming blobs of data
 
 from schema import And, Or, Schema
 
-from brewblox_stepper import actions, conditions
+from brewblox_automation import actions, conditions
 
 # Dates are either not set (None), or ballpark correct for millisecond
 # 1e11 is Mar 03 1973 in milliseconds, and Nov 16 5138 in seconds

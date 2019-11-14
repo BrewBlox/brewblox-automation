@@ -10,7 +10,7 @@ from aiohttp import web
 from brewblox_service import http_client
 from schema import And, Or, Schema
 
-from brewblox_stepper import utils
+from brewblox_automation import utils
 
 
 class ConditionBase:

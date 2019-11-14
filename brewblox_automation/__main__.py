@@ -2,15 +2,14 @@
 Application entrypoint
 """
 
+from brewblox_automation import api, runner, sse, store
 from brewblox_service import (brewblox_logger, couchdb_client, events,
                               http_client, scheduler, service)
-
-from brewblox_stepper import api, runner, sse, store
 
 LOGGER = brewblox_logger(__name__)
 
 
-def create_parser(default_name='stepper'):
+def create_parser(default_name='automation'):
     parser = service.create_parser(default_name=default_name)
 
     group = parser.add_argument_group('Updates')
