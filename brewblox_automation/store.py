@@ -12,9 +12,9 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, couchdb_client, features, strex
 from schema import Optional, Schema
 
-from brewblox_stepper import conditions, utils, validation
+from brewblox_automation import conditions, utils, validation
 
-DB_NAME = 'brewblox-stepper'
+DB_NAME = 'brewblox-automation'
 RUNTIME_DOCUMENT = 'stepper-runtime'
 READY_WAIT_TIMEOUT_S = 20
 

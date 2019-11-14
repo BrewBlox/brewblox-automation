@@ -1,5 +1,5 @@
 """
-Tests brewblox_stepper.sse
+Tests brewblox_automation.sse
 """
 
 import asyncio
@@ -10,7 +10,7 @@ from aiohttp.client_exceptions import ContentTypeError
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_stepper import api, sse, store
+from brewblox_automation import api, sse, store
 
 TESTED = sse.__name__
 

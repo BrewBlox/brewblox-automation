@@ -5,7 +5,7 @@ API for process CRUD
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_stepper import store
+from brewblox_automation import store
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()

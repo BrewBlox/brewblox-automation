@@ -1,11 +1,11 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='brewblox-stepper',
+    name='brewblox-automation',
     use_scm_version={'local_scheme': lambda v: ''},
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/BrewBlox/brewblox-stepper/',
+    url='https://github.com/BrewBlox/brewblox-automation/',
     author='BrewPi',
     author_email='Development@brewpi.com',
     classifiers=[

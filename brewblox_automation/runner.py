@@ -8,7 +8,7 @@ from uuid import uuid4
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_stepper import actions, conditions, store, utils
+from brewblox_automation import actions, conditions, store, utils
 
 LOGGER = brewblox_logger(__name__)
 

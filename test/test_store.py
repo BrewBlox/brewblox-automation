@@ -1,12 +1,12 @@
 """
-Tests brewblox_stepper.store
+Tests brewblox_automation.store
 """
 
 import pytest
 from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
-from brewblox_stepper import store
+from brewblox_automation import store
 
 TESTED = store.__name__
 

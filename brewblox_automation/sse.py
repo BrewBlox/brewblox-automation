@@ -11,7 +11,7 @@ from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_stepper import store
+from brewblox_automation import store
 
 PUBLISH_INTERVAL_S = 5
 PUBLISH_TIMEOUT_S = 5
