@@ -167,7 +167,14 @@ def runtime(process):
         'start': 1567760830490,
         'end': None,
         'process': deepcopy(process),
-        'tasks': [],
+        'tasks': [
+            {
+                'ref': 'test-task-one',
+                'title': 'Default test task',
+                'message': 'This is the default test task from conftest.py',
+                'done': False,
+            }
+        ],
         'results': [
             {
                 'id': 'result-one-id',

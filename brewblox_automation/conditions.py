@@ -92,6 +92,21 @@ class ManualAdvance(ConditionBase):
         return False
 
 
+class TaskDone(ConditionBase):
+    _schema = Schema({
+        'ref': str
+    })
+
+    @classmethod
+    def is_valid(cls, opts: dict) -> bool:
+        return cls._schema.is_valid(opts)
+
+    @classmethod
+    async def check(cls, app: web.Application, opts: dict, runtime: dict) -> bool:
+        task = next((task for task in runtime['tasks'] if task['ref'] == opts['ref']), None)
+        return task and task['done']
+
+
 _INDEX = {
     v.__name__: v for v in [
         TimeAbsolute,

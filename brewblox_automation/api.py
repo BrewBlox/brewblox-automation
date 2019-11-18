@@ -174,3 +174,38 @@ async def stop(request: web.Request) -> web.Response:
             request.match_info['id']
         )
     )
+
+
+@routes.post('/task/{id}')
+async def write_task(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Stop a Process
+    tags:
+    - Stepper
+    - Process
+    operationId: process.stop
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: Process ID
+        schema:
+            type: string
+    -
+        name: body
+        in: body
+        description: object
+        required: true
+        schema:
+            type: object
+    """
+    return web.json_response(
+        await store.get_store(request.app).write_task(
+            request.match_info['id'],
+            await request.json()
+        )
+    )

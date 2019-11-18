@@ -219,3 +219,21 @@ class RuntimeStore(Datastore):
 
         await self.write_store()
         return runtime
+
+    _write_task_args = Schema({
+        'ref': str,
+        'done': bool
+    })
+
+    @when_ready
+    async def write_task(self, id: str, args: dict):
+        self._write_task_args.validate(args)
+
+        runtime = self.config.get(id)
+        if not runtime:
+            raise KeyError(f'Runtime {id} not found')
+
+        rt_task = next((task for task in runtime['tasks'] if task['ref'] == args['ref']))
+        rt_task['done'] = args['done']
+        await self.write_store()
+        return runtime
