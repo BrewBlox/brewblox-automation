@@ -44,6 +44,25 @@ class BlockPatch(ActionBase):
         await session.put(url, json=block)
 
 
+class TaskCreate(ActionBase):
+    _schema = Schema({
+        'ref': str,
+        'title': str,
+        'message': str,
+    })
+
+    @classmethod
+    def is_valid(cls, opts: dict) -> bool:
+        return cls._schema.is_valid(opts)
+
+    @classmethod
+    async def run(cls, app: web.Application, opts: dict, runtime: dict):
+        runtime['tasks'].append({
+            **opts,
+            'done': False
+        })
+
+
 _INDEX = {
     v.__name__: v for v in [
         BlockPatch,

@@ -95,3 +95,16 @@ async def test_remove(app, client, runtime, conditions_mock):
     await response(client.delete('/runtime/runtime-id', json={}))
     await response(client.delete('/runtime/dummy', json={}))
     assert [] == await response(client.get('/runtime'))
+
+
+async def test_write_task(app, client, runtime, conditions_mock):
+    await response(client.post('/runtime', json=runtime))
+
+    rt = await response(client.post('/task/runtime-id', json={'ref': 'test-task-one', 'done': True}))
+    assert rt['tasks'][0]['ref'] == 'test-task-one'
+    assert rt['tasks'][0]['done'] is True
+    assert rt['tasks'] == (await response(client.get('/runtime/runtime-id')))['tasks']
+
+    await response(client.post('/task/runtime-id', json={'ref': 'dummy', 'done': True}), 500)
+    await response(client.post('/task/runtime-id', json={'dummy-args': True}), 500)
+    await response(client.post('/task/dummy', json={'ref': 'test-task-one', 'done': True}), 500)
