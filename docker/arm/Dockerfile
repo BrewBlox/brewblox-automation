@@ -1,25 +1,13 @@
-FROM brewblox/brewblox-service:rpi-newest-tag as base
+FROM brewblox/rpi-node:12 as base
 
-COPY ./dist /app/dist
-COPY ./requirements.txt /app/requirements.txt
+COPY ./package.json /app/package.json
+RUN cd /app && npm install
 
-RUN pip3 install wheel \
-    && ls /wheeley-base \
-    && pip3 wheel --wheel-dir=/wheeley --find-links=/wheeley-base -r /app/requirements.txt \
-    && pip3 wheel --wheel-dir=/wheeley --find-links=/wheeley --no-index /app/dist/*
-
-FROM brewblox/rpi-python:3.7-slim
+FROM brewblox/rpi-node:12-alpine
 EXPOSE 5000
 WORKDIR /app
 
-ARG service_info=UNKNOWN
-ENV SERVICE_INFO=${service_info}
+COPY ./dist /app/dist
+COPY --from=base /app/node_modules /app/node_modules
 
-COPY --from=base /wheeley /wheeley
-COPY ./config /app/config
-
-RUN pip3 install --no-index --find-links=/wheeley brewblox-automation \
-    && rm -rf /wheeley \
-    && pip3 freeze
-
-ENTRYPOINT ["python3", "-m", "brewblox_automation"]
+ENTRYPOINT [ "node", "dist/server.js" ]

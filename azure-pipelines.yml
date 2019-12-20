@@ -18,52 +18,81 @@ variables:
   - group: brewblox
 
 steps:
-- task: UsePythonVersion@0
+- task: NodeTool@0
   inputs:
-    addToPath: true
-    versionSpec: '3.7'
-    architecture: 'x64'
+    versionSpec: '12.x'
+  displayName: 'Install Node.js'
 
 - bash: |
     BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
     TAG=$(git describe --tags | grep "^[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]$")
     echo "##vso[task.setvariable variable=brewblox.branch]$BRANCH"
     echo "##vso[task.setvariable variable=brewblox.tag]$TAG"
+    echo "##vso[task.setvariable variable=brewblox.repo]brewblox/brewblox-automation"
+    echo "##vso[task.setvariable variable=brewblox.cleantag]$(echo $BRANCH | tr '/' '-' | tr '[:upper:]' '[:lower:]')"
   displayName: export build variables
 
 - bash: |
-    pip install pipenv
-    pipenv install --system --dev --deploy
-    pytest
-  displayName: Run Pytest
+    npm ci
+  displayName: Install
+
+- bash: |
+    npm run lint
+    npm run test
+  displayName: NPM test
+
+- bash: |
+    npm run build
+  displayName: NPM build
 
 - bash: |
     echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin
-  displayName: Docker login
+    docker run --rm --privileged multiarch/qemu-user-static:register --reset
+    cp package.json docker/
+    cp -r dist/ docker/
+  displayName: Prepare deploy
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
-- bash: >
-    brewblox-dev localbuild
-    --arch amd --arch arm
-    --tag newest-tag --tag $(brewblox.tag)
-    --push
-  displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
+- bash:
+    docker build
+      --no-cache
+      -t $(brewblox.repo):newest-tag
+      -t $(brewblox.repo):$(brewblox.tag)
+      -f docker/amd/Dockerfile
+      docker;
+    docker push $(brewblox.repo):newest-tag;
+    docker push $(brewblox.repo):$(brewblox.tag);
+  displayName: Deploy AMD newest-tag and version tag to Docker Hub on tagged commits
   condition: and(succeeded(), variables['brewblox.tag'])
 
-- bash: >
-    brewblox-dev localbuild
-    --arch amd --arch arm
-    --branch-tag
-    --push
-  displayName: Deploy branch to Docker Hub on any push to the GitHub repository
-  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
-  env:
-  # brewblox-tools looks for $TRAVIS_BRANCH to determine branch tag
-    TRAVIS_BRANCH: $(brewblox.branch)
+- bash:
+    docker build
+      --no-cache
+      -t $(brewblox.repo):rpi-newest-tag
+      -t $(brewblox.repo):rpi-$(brewblox.tag)
+      -f docker/arm/Dockerfile
+      docker;
+    docker push $(brewblox.repo):rpi-newest-tag;
+    docker push $(brewblox.repo):rpi-$(brewblox.tag);
+  displayName: Deploy ARM newest-tag and version tag to Docker Hub on tagged commits
+  condition: and(succeeded(), variables['brewblox.tag'])
 
-- bash: |
-    pip install twine
-    python setup.py sdist
-    twine upload -u $(PYPI_USER) -p $(PYPI_PASSWORD) --skip-existing dist/*
-  displayName: Deploy to PyPi
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+- bash:
+    docker build
+      --no-cache
+      -t $(brewblox.repo):$(brewblox.cleantag)
+      -f docker/amd/Dockerfile
+      docker;
+    docker push $(brewblox.repo):$(brewblox.cleantag);
+  displayName: Deploy AMD branch to Docker Hub on any push to the GitHub repository
+  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
+
+- bash:
+    docker build
+      --no-cache
+      -t $(brewblox.repo):rpi-$(brewblox.cleantag)
+      -f docker/arm/Dockerfile
+      docker;
+    docker push $(brewblox.repo):rpi-$(brewblox.cleantag);
+  displayName: Deploy ARM branch to Docker Hub on any push to the GitHub repository
+  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
