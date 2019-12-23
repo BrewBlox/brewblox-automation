@@ -4,6 +4,9 @@ module.exports = {
       tsConfig: 'tsconfig.json',
     },
   },
+  setupFiles: [
+    '<rootDir>/test/setup.ts',
+  ],
   moduleFileExtensions: [
     'ts',
     'js',

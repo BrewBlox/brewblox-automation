@@ -1,15 +1,33 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 
-import * as db from '../database/task-db';
+import { taskDb } from '../database';
 
 
-export const fetchAll = async (req: Request, res: Response, next: NextFunction) => {
+export const fetchAll = async (req: Request, res: Response) => {
   res
-    .json(await db.fetchAll());
+    .json(await taskDb.fetchAll());
 };
 
-export const create = async (req: Request, res: Response, next: NextFunction) => {
+export const create = async (req: Request, res: Response) => {
   res
     .status(201)
-    .json(await db.create(req.body));
+    .json(await taskDb.create(req.body));
+};
+
+export const save = async (req: Request, res: Response) => {
+  res
+    .json(await taskDb.save(req.body));
+};
+
+export const testCreate = async (req: Request, res: Response) => {
+  res
+    .status(201)
+    .json(await taskDb.create({
+      _id: 'test-task',
+      ref: 'testing',
+      title: 'Test Task',
+      source: 'jesttasktest',
+      message: 'hello this is task',
+      status: 'Created',
+    }));
 };

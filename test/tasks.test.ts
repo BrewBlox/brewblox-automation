@@ -1,9 +1,8 @@
 import request from 'supertest';
 
 import app from '../src/app';
-import { clear } from '../src/database/task-db';
+import { taskDb } from '../src/database';
 import { AutomationTask } from '../src/types';
-
 
 describe('/automation/', () => {
   const task: AutomationTask = {
@@ -15,9 +14,10 @@ describe('/automation/', () => {
     status: 'Created',
   };
 
-  beforeEach(async (done) => {
-    await clear();
-    done();
+  beforeEach(done => taskDb.clear().then(() => done()));
+
+  it('should be a local database', () => {
+    expect(taskDb.local).toBe(true);
   });
 
   it('should read empty database', async () => {
