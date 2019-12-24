@@ -1,12 +1,12 @@
 import request from 'supertest';
 
 import app from '../src/app';
-import { processDb } from '../src/database';
+import { client, processDb } from '../src/database';
 import { AutomationProcess } from '../src/types';
 
-describe('/process/', () => {
-  const task: AutomationProcess = {
-    _id: 'test-process',
+describe('/automation/process/', () => {
+  const proc: AutomationProcess = {
+    id: 'test-process',
     title: 'Test Process',
     steps: [{
       id: 'step-one',
@@ -28,27 +28,27 @@ describe('/process/', () => {
   });
 
   it('should be a local database', () => {
-    expect(processDb.local).toBe(true);
+    expect(client.local).toBe(true);
   });
 
   it('should create process', async () => {
     let res = await request(app)
       .post('/automation/process')
-      .send(task);
+      .send(proc);
 
     expect(res.status).toEqual(201);
-    expect(res.body).toMatchObject(task);
+    expect(res.body).toMatchObject(proc);
 
     res = await request(app)
       .get('/automation/process');
 
     expect(res.status).toEqual(200);
-    expect(res.body).toMatchObject([task]);
+    expect(res.body).toMatchObject([proc]);
 
     res = await request(app)
       .get('/automation/process/test-process');
 
     expect(res.status).toEqual(200);
-    expect(res.body).toMatchObject(task);
+    expect(res.body).toMatchObject(proc);
   });
 });

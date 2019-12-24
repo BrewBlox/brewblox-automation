@@ -1,12 +1,20 @@
-export interface DbStored {
-  _id: string;
+
+export interface StoreObject {
+  id: string;
   _rev?: string;
-  _deleted?: boolean;
 }
 
-type AutomationStatus = 'Created' | 'Started' | 'Completed' | 'Cancelled' | 'Unknown';
+type AutomationStatus = 'Created' | 'Started' | 'Done' | 'Cancelled' | 'Unknown';
 
-export interface AutomationTask extends DbStored {
+export interface Timed {
+  status: AutomationStatus;
+  /** @nullable */
+  start: number | null;
+  /** @nullable */
+  end: number | null;
+}
+
+export interface AutomationTask extends StoreObject {
   ref: string;
   title: string;
   source: string;
@@ -42,25 +50,19 @@ export interface AutomationStep {
   notes: AutomationNote[];
 }
 
-export interface AutomationProcess extends DbStored {
+export interface AutomationProcess extends StoreObject {
   title: string;
   steps: AutomationStep[];
 }
 
-export interface AutomationResult {
+export interface AutomationResult extends Timed {
   id: string;
   title: string;
   stepId: string;
-  start: number | null;
-  end: number | null;
-  status: AutomationStatus;
 }
 
-export interface AutomationRuntime extends DbStored {
+export interface AutomationRuntime extends StoreObject, Timed {
   title: string;
-  start: number | null;
-  end: number | null;
-  status: AutomationStatus;
   processId: string;
   results: AutomationResult[];
 }

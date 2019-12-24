@@ -1,0 +1,125 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AutomationStep"
+      }
+    },
+    "id": {
+      "type": "string"
+    },
+    "_rev": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "steps",
+    "title"
+  ],
+  "definitions": {
+    "AutomationStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction<any>"
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationCondition<any>"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationNote"
+          }
+        }
+      },
+      "required": [
+        "actions",
+        "conditions",
+        "enabled",
+        "id",
+        "notes",
+        "title"
+      ]
+    },
+    "AutomationAction<any>": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "opts": {}
+      },
+      "required": [
+        "enabled",
+        "id",
+        "opts",
+        "type"
+      ]
+    },
+    "AutomationCondition<any>": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "opts": {}
+      },
+      "required": [
+        "enabled",
+        "id",
+        "opts",
+        "type"
+      ]
+    },
+    "AutomationNote": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "title"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,39 +1,52 @@
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { runtimeDb } from '../database';
-import { validateRuntime } from '../validation';
+import { taskDb } from '../database';
+import { validateTask } from '../validation';
 import { wrap } from './utils';
 
 const validate = (req: Request, res: Response, next: NextFunction) => {
-  validateRuntime(req.body)
+  validateTask(req.body)
     ? next()
     : res.sendStatus(422);
 };
 
 const fetchAll = async (req: Request, res: Response) => {
   res
-    .json(await runtimeDb.fetchAll());
+    .json(await taskDb.fetchAll());
 };
 
 const fetchById = async (req: Request, res: Response) => {
   res
-    .json(await runtimeDb.fetchById(req.params.id));
+    .json(await taskDb.fetchById(req.params.id));
 };
 
 const create = async (req: Request, res: Response) => {
   res
     .status(201)
-    .json(await runtimeDb.create(req.body));
+    .json(await taskDb.create(req.body));
 };
 
 const save = async (req: Request, res: Response) => {
   res
-    .json(await runtimeDb.save(req.body));
+    .json(await taskDb.save(req.body));
 };
 
 const remove = async (req: Request, res: Response) => {
   res
-    .json(await runtimeDb.remove(req.body));
+    .json(await taskDb.remove(req.body));
+};
+
+const testCreate = async (req: Request, res: Response) => {
+  res
+    .status(201)
+    .json(await taskDb.create({
+      id: 'test-task',
+      ref: 'testing',
+      title: 'Test Task',
+      source: 'jesttasktest',
+      message: 'hello this is task',
+      status: 'Created',
+    }));
 };
 
 const router = Router({ mergeParams: true });
@@ -41,6 +54,8 @@ router.get('/', wrap(fetchAll));
 router.get('/:id', wrap(fetchById));
 router.post('/', validate, wrap(create));
 router.put('/', validate, wrap(save));
-router.delete('/', wrap(remove));
+router.delete('/', validate, wrap(remove));
+
+router.post('/test', wrap(testCreate));
 
 export default router;

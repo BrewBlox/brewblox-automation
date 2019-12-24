@@ -1,0 +1,97 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "processId": {
+      "type": "string"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AutomationResult"
+      }
+    },
+    "id": {
+      "type": "string"
+    },
+    "_rev": {
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/definitions/AutomationStatus"
+    },
+    "start": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "end": {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "end",
+    "id",
+    "processId",
+    "results",
+    "start",
+    "status",
+    "title"
+  ],
+  "definitions": {
+    "AutomationResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "stepId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/AutomationStatus"
+        },
+        "start": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "end": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "end",
+        "id",
+        "start",
+        "status",
+        "stepId",
+        "title"
+      ]
+    },
+    "AutomationStatus": {
+      "enum": [
+        "Cancelled",
+        "Created",
+        "Done",
+        "Started",
+        "Unknown"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

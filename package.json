@@ -10,6 +10,7 @@
   "license": "GPL-3.0",
   "scripts": {
     "start": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run build:watch\" \"npm run serve:watch\"",
+    "schemas": "rm -rf src/schemas/*; ts-node schemas.ts",
     "build": "tsc",
     "build:watch": "tsc -w",
     "serve": "node dist/server.js",
@@ -19,9 +20,8 @@
     "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet"
   },
   "dependencies": {
-    "body-parser": "^1.19.0",
+    "ajv": "^6.10.2",
     "compression": "^1.7.4",
-    "errorhandler": "^1.5.1",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "minimist": "^1.2.0",
@@ -32,7 +32,7 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "@types/body-parser": "^1.17.1",
+    "@types/ajv": "^1.0.0",
     "@types/compression": "^1.0.1",
     "@types/concurrently": "^4.1.0",
     "@types/errorhandler": "0.0.32",
@@ -57,6 +57,7 @@
     "supertest": "^4.0.2",
     "ts-jest": "^24.2.0",
     "ts-node": "^8.5.4",
-    "typescript": "^3.7.3"
+    "typescript": "^3.7.3",
+    "typescript-json-schema": "^0.41.0"
   }
 }

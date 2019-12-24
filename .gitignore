@@ -16,6 +16,7 @@ __old
 
 # Coverage reports
 coverage
+.coverage
 
 # API keys and secrets
 .env

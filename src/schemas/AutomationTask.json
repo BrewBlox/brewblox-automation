@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "ref": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/definitions/AutomationStatus"
+    },
+    "id": {
+      "type": "string"
+    },
+    "_rev": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "message",
+    "ref",
+    "source",
+    "status",
+    "title"
+  ],
+  "definitions": {
+    "AutomationStatus": {
+      "enum": [
+        "Cancelled",
+        "Created",
+        "Done",
+        "Started",
+        "Unknown"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
