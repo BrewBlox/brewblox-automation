@@ -13,26 +13,44 @@
         "$ref": "#/definitions/AutomationResult"
       }
     },
+    "start": {
+      "anyOf": [
+        {
+          "description": "Enables basic storage and retrieval of dates and times.",
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "end": {
+      "anyOf": [
+        {
+          "description": "Enables basic storage and retrieval of dates and times.",
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "$ref": "#/definitions/AutomationStatus"
+    },
     "id": {
       "type": "string"
     },
     "_rev": {
       "type": "string"
-    },
-    "status": {
-      "$ref": "#/definitions/AutomationStatus"
-    },
-    "start": {
-      "type": [
-        "number",
-        "null"
-      ]
-    },
-    "end": {
-      "type": [
-        "number",
-        "null"
-      ]
     }
   },
   "required": [
@@ -57,20 +75,38 @@
         "stepId": {
           "type": "string"
         },
-        "status": {
-          "$ref": "#/definitions/AutomationStatus"
-        },
         "start": {
-          "type": [
-            "number",
-            "null"
+          "anyOf": [
+            {
+              "description": "Enables basic storage and retrieval of dates and times.",
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "end": {
-          "type": [
-            "number",
-            "null"
+          "anyOf": [
+            {
+              "description": "Enables basic storage and retrieval of dates and times.",
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
           ]
+        },
+        "status": {
+          "$ref": "#/definitions/AutomationStatus"
         }
       },
       "required": [

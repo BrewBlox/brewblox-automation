@@ -6,13 +6,8 @@ export interface StoreObject {
 
 type AutomationStatus = 'Created' | 'Started' | 'Done' | 'Cancelled' | 'Unknown';
 
-export interface Timed {
-  status: AutomationStatus;
-  /** @nullable */
-  start: number | null;
-  /** @nullable */
-  end: number | null;
-}
+/** @nullable */
+type Datum = Date | number | null;
 
 export interface AutomationTask extends StoreObject {
   ref: string;
@@ -55,14 +50,20 @@ export interface AutomationProcess extends StoreObject {
   steps: AutomationStep[];
 }
 
-export interface AutomationResult extends Timed {
+export interface AutomationResult {
   id: string;
   title: string;
   stepId: string;
+  start: Datum;
+  end: Datum;
+  status: AutomationStatus;
 }
 
-export interface AutomationRuntime extends StoreObject, Timed {
+export interface AutomationRuntime extends StoreObject {
   title: string;
   processId: string;
   results: AutomationResult[];
+  start: Datum;
+  end: Datum;
+  status: AutomationStatus;
 }
