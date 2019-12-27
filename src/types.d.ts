@@ -9,6 +9,74 @@ type AutomationStatus = 'Created' | 'Started' | 'Done' | 'Cancelled' | 'Unknown'
 /** @nullable */
 type Datum = Date | number | null;
 
+// Conditions
+////////////////
+
+export interface TimeAbsolute {
+  type: 'TimeAbsolute';
+  time: number | Date;
+}
+
+export interface TimeElapsed {
+  type: 'TimeElapsed';
+  duration: number;
+}
+
+export interface BlockValue {
+  type: 'BlockValue';
+  blockId: string;
+  serviceId: string;
+  blockType: string;
+  key: string;
+  operator: 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt';
+  value: any;
+}
+
+export interface TaskStatus {
+  type: 'TaskStatus';
+  ref: string;
+  status: AutomationStatus;
+}
+
+export interface ManualAdvance {
+  type: 'ManualAdvance';
+  desc: string;
+}
+
+export type ActualCondition =
+  TimeAbsolute
+  | TimeElapsed
+  | BlockValue
+  | TaskStatus
+  | ManualAdvance
+  ;
+
+// Actions
+/////////////
+
+export interface BlockPatch {
+  type: 'BlockPatch';
+  blockId: string;
+  serviceId: string;
+  blockType: string;
+  data: any;
+}
+
+export interface TaskCreate {
+  type: 'TaskCreate';
+  ref: string;
+  title: string;
+  message: string;
+}
+
+export type ActualAction =
+  BlockPatch
+  | TaskCreate
+  ;
+
+// Generic
+//////////////
+
 export interface AutomationTask extends StoreObject {
   ref: string;
   title: string;
@@ -17,18 +85,18 @@ export interface AutomationTask extends StoreObject {
   status: AutomationStatus;
 }
 
-export interface AutomationAction<T extends {} = any> {
+export interface AutomationAction {
   id: string;
-  type: string;
+  title: string;
   enabled: boolean;
-  opts: T;
+  opts: ActualAction;
 }
 
-export interface AutomationCondition<T extends {} = any> {
+export interface AutomationCondition<T = any> {
   id: string;
-  type: string;
+  title: string;
   enabled: boolean;
-  opts: T;
+  opts: ActualCondition;
 }
 
 export interface AutomationNote {

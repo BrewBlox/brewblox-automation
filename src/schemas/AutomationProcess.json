@@ -38,7 +38,7 @@
         "actions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/AutomationAction<any>"
+            "$ref": "#/definitions/AutomationAction"
           }
         },
         "conditions": {
@@ -63,24 +63,87 @@
         "title"
       ]
     },
-    "AutomationAction<any>": {
+    "AutomationAction": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string"
         },
-        "type": {
+        "title": {
           "type": "string"
         },
         "enabled": {
           "type": "boolean"
         },
-        "opts": {}
+        "opts": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BlockPatch"
+            },
+            {
+              "$ref": "#/definitions/TaskCreate"
+            }
+          ]
+        }
       },
       "required": [
         "enabled",
         "id",
         "opts",
+        "title"
+      ]
+    },
+    "BlockPatch": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "BlockPatch"
+          ]
+        },
+        "blockId": {
+          "type": "string"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "blockType": {
+          "type": "string"
+        },
+        "data": {}
+      },
+      "required": [
+        "blockId",
+        "blockType",
+        "data",
+        "serviceId",
+        "type"
+      ]
+    },
+    "TaskCreate": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "TaskCreate"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "ref",
+        "title",
         "type"
       ]
     },
@@ -90,18 +153,175 @@
         "id": {
           "type": "string"
         },
-        "type": {
+        "title": {
           "type": "string"
         },
         "enabled": {
           "type": "boolean"
         },
-        "opts": {}
+        "opts": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TimeAbsolute"
+            },
+            {
+              "$ref": "#/definitions/TimeElapsed"
+            },
+            {
+              "$ref": "#/definitions/BlockValue"
+            },
+            {
+              "$ref": "#/definitions/TaskStatus"
+            },
+            {
+              "$ref": "#/definitions/ManualAdvance"
+            }
+          ]
+        }
       },
       "required": [
         "enabled",
         "id",
         "opts",
+        "title"
+      ]
+    },
+    "TimeAbsolute": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "TimeAbsolute"
+          ]
+        },
+        "time": {
+          "anyOf": [
+            {
+              "description": "Enables basic storage and retrieval of dates and times.",
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "required": [
+        "time",
+        "type"
+      ]
+    },
+    "TimeElapsed": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "TimeElapsed"
+          ]
+        },
+        "duration": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "duration",
+        "type"
+      ]
+    },
+    "BlockValue": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "BlockValue"
+          ]
+        },
+        "blockId": {
+          "type": "string"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "blockType": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "ge",
+            "gt",
+            "le",
+            "lt",
+            "ne"
+          ],
+          "type": "string"
+        },
+        "value": {}
+      },
+      "required": [
+        "blockId",
+        "blockType",
+        "key",
+        "operator",
+        "serviceId",
+        "type",
+        "value"
+      ]
+    },
+    "TaskStatus": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "TaskStatus"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/AutomationStatus"
+        }
+      },
+      "required": [
+        "ref",
+        "status",
+        "type"
+      ]
+    },
+    "AutomationStatus": {
+      "enum": [
+        "Cancelled",
+        "Created",
+        "Done",
+        "Started",
+        "Unknown"
+      ],
+      "type": "string"
+    },
+    "ManualAdvance": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "ManualAdvance"
+          ]
+        },
+        "desc": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "desc",
         "type"
       ]
     },

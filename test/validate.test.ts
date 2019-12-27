@@ -1,5 +1,5 @@
 import { AutomationProcess, AutomationRuntime, AutomationTask } from '../src/types';
-import { validateProcess, validateRuntime, validateTask } from '../src/validation';
+import { lastErrors, validateProcess, validateRuntime, validateTask } from '../src/validation';
 
 describe('object validation', () => {
   it('should validate tasks', () => {
@@ -13,8 +13,8 @@ describe('object validation', () => {
     };
 
     expect(validateTask(task)).toBe(true);
-    expect(validateTask({})).toBe(false);
-    expect(validateTask({ ...task, extra: true })).toBe(true);
+    expect(validateTask({} as any)).toBe(false);
+    expect(validateTask({ ...task, extra: true } as any)).toBe(true);
   });
 
   it('should validate processes', () => {
@@ -27,15 +27,23 @@ describe('object validation', () => {
         enabled: true,
         actions: [{
           id: 'action-one',
-          type: 'ActionOneType',
+          title: 'Action one',
           enabled: true,
-          opts: {},
+          opts: {
+            type: 'TaskCreate',
+            ref: 'tasky',
+            title: 'Created task',
+            message: 'Beep boop I am robot',
+          },
         }],
         conditions: [{
           id: 'condition-one',
-          type: 'ConditionOneType',
+          title: 'Condition one',
           enabled: false,
-          opts: {},
+          opts: {
+            type: 'TimeAbsolute',
+            time: new Date().getTime(),
+          },
         }],
         notes: [{
           title: 'Very important note',
@@ -44,9 +52,11 @@ describe('object validation', () => {
       }],
     };
 
+    validateProcess(proc);
+    expect(lastErrors()).toEqual([]);
     expect(validateProcess(proc)).toBe(true);
-    expect(validateProcess({})).toBe(false);
-    expect(validateProcess({ ...proc, extra: true })).toBe(true);
+    expect(validateProcess({} as any)).toBe(false);
+    expect(validateProcess({ ...proc, extra: true } as any)).toBe(true);
   });
 
   it('should validate runtimes', () => {
@@ -69,7 +79,7 @@ describe('object validation', () => {
     };
 
     expect(validateRuntime(rt)).toBe(true);
-    expect(validateRuntime({})).toBe(false);
-    expect(validateRuntime({ ...rt, extra: true })).toBe(true);
+    expect(validateRuntime({} as any)).toBe(false);
+    expect(validateRuntime({ ...rt, extra: true } as any)).toBe(true);
   });
 });
