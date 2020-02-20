@@ -135,3 +135,14 @@ export interface AutomationRuntime extends StoreObject {
   end: Datum;
   status: AutomationStatus;
 }
+
+export interface EventbusMessage {
+  key: string;
+  type: string;
+  duration: string;
+  data: any;
+}
+
+export interface CachedMessage extends EventbusMessage {
+  expires: number;
+}

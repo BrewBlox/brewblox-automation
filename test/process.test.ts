@@ -1,7 +1,7 @@
 import request from 'supertest';
 
 import app from '../src/app';
-import { client, processDb } from '../src/database';
+import { database, processDb } from '../src/database';
 import { AutomationProcess } from '../src/types';
 
 describe('/automation/process/', () => {
@@ -28,7 +28,7 @@ describe('/automation/process/', () => {
   });
 
   it('should be a local database', () => {
-    expect(client.local).toBe(true);
+    expect(database.local).toBe(true);
   });
 
   it('should create process', async () => {

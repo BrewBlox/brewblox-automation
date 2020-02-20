@@ -21,10 +21,12 @@
   },
   "dependencies": {
     "ajv": "^6.10.2",
+    "amqplib": "^0.5.5",
     "compression": "^1.7.4",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "minimist": "^1.2.0",
+    "parse-duration": "^0.1.2",
     "pouchdb": "^7.1.1",
     "pouchdb-adapter-memory": "^7.1.1",
     "request": "^2.88.0",
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@types/ajv": "^1.0.0",
+    "@types/amqplib": "^0.5.13",
     "@types/compression": "^1.0.1",
     "@types/concurrently": "^4.1.0",
     "@types/errorhandler": "0.0.32",
