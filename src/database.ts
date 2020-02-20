@@ -13,15 +13,17 @@ PouchDB.plugin(MemoryAdapter);
 export const name = 'brewblox-automation';
 
 export class DatabaseClient {
-  private readonly remoteDb: PouchDB.Database | null = null;
   private readonly localDb: PouchDB.Database;
+  private remoteDb: PouchDB.Database | null = null;
 
   public readonly local: boolean;
 
   public constructor() {
     this.local = args.local;
     this.localDb = new PouchDB(name, { adapter: 'memory' });
+  }
 
+  public connect(): void {
     if (!this.local) {
       this.remoteDb = new PouchDB(`http://${args.database}:5984/${name}`);
       logger.info('Starting database sync: ' + this.remoteDb.name);
@@ -125,7 +127,7 @@ export class AutomationDatabase<T extends StoreObject> {
   }
 }
 
-export const client = new DatabaseClient();
-export const taskDb = new AutomationDatabase<AutomationTask>(client, 'brewblox-task');
-export const processDb = new AutomationDatabase<AutomationProcess>(client, 'brewblox-process');
-export const runtimeDb = new AutomationDatabase<AutomationRuntime>(client, 'brewblox-runtime');
+export const database = new DatabaseClient();
+export const taskDb = new AutomationDatabase<AutomationTask>(database, 'brewblox-task');
+export const processDb = new AutomationDatabase<AutomationProcess>(database, 'brewblox-process');
+export const runtimeDb = new AutomationDatabase<AutomationRuntime>(database, 'brewblox-runtime');

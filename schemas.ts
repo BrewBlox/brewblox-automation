@@ -13,6 +13,7 @@ const types = [
   'AutomationTask',
   'AutomationProcess',
   'AutomationRuntime',
+  'EventbusMessage',
 ];
 
 types.forEach(t => {

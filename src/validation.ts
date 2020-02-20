@@ -4,6 +4,7 @@ import Ajv from 'ajv';
 import AutomationProcess from './schemas/AutomationProcess.json';
 import AutomationRuntime from './schemas/AutomationRuntime.json';
 import AutomationTask from './schemas/AutomationTask.json';
+import EventbusMessage from './schemas/EventbusMessage.json';
 import * as types from './types';
 
 const ajv = new Ajv();
@@ -16,5 +17,8 @@ export const validateRuntime = (data: types.AutomationRuntime) =>
 
 export const validateTask = (data: types.AutomationTask) =>
   ajv.validate(AutomationTask, data);
+
+export const validateMessage = (data: types.EventbusMessage) =>
+  ajv.validate(EventbusMessage, data);
 
 export const lastErrors = () => ajv.errors ?? [];
