@@ -7,9 +7,12 @@ describe('object validation', () => {
       id: 'test-task',
       ref: 'testing',
       title: 'Test Task',
-      source: 'jesttasktest',
       message: 'hello this is task',
       status: 'Created',
+      source: {
+        runtimeId: 'testRT',
+        stepId: 'test-step',
+      },
     };
 
     expect(validateTask(task)).toBe(true);
@@ -29,7 +32,7 @@ describe('object validation', () => {
           id: 'action-one',
           title: 'Action one',
           enabled: true,
-          opts: {
+          impl: {
             type: 'TaskCreate',
             ref: 'tasky',
             title: 'Created task',
@@ -40,12 +43,13 @@ describe('object validation', () => {
           id: 'condition-one',
           title: 'Condition one',
           enabled: false,
-          opts: {
+          impl: {
             type: 'TimeAbsolute',
             time: new Date().getTime(),
           },
         }],
         notes: [{
+          id: 'note-one',
           title: 'Very important note',
           message: 'Bring cookies',
         }],

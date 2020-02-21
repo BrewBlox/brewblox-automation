@@ -43,7 +43,10 @@ const testCreate = async (req: Request, res: Response) => {
       id: 'test-task',
       ref: 'testing',
       title: 'Test Task',
-      source: 'jesttasktest',
+      source: {
+        runtimeId: 'test rt',
+        stepId: 'test step',
+      },
       message: 'hello this is task',
       status: 'Created',
     }));

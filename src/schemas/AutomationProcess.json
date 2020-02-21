@@ -44,7 +44,7 @@
         "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/AutomationCondition<any>"
+            "$ref": "#/definitions/AutomationCondition"
           }
         },
         "notes": {
@@ -75,7 +75,7 @@
         "enabled": {
           "type": "boolean"
         },
-        "opts": {
+        "impl": {
           "anyOf": [
             {
               "$ref": "#/definitions/BlockPatch"
@@ -89,7 +89,7 @@
       "required": [
         "enabled",
         "id",
-        "opts",
+        "impl",
         "title"
       ]
     },
@@ -147,7 +147,7 @@
         "type"
       ]
     },
-    "AutomationCondition<any>": {
+    "AutomationCondition": {
       "type": "object",
       "properties": {
         "id": {
@@ -159,7 +159,7 @@
         "enabled": {
           "type": "boolean"
         },
-        "opts": {
+        "impl": {
           "anyOf": [
             {
               "$ref": "#/definitions/TimeAbsolute"
@@ -182,7 +182,7 @@
       "required": [
         "enabled",
         "id",
-        "opts",
+        "impl",
         "title"
       ]
     },
@@ -328,6 +328,9 @@
     "AutomationNote": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string"
+        },
         "title": {
           "type": "string"
         },
@@ -336,6 +339,7 @@
         }
       },
       "required": [
+        "id",
         "message",
         "title"
       ]

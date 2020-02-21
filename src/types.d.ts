@@ -43,7 +43,7 @@ export interface ManualAdvance {
   desc: string;
 }
 
-export type ActualCondition =
+export type ConditionImpl =
   TimeAbsolute
   | TimeElapsed
   | BlockValue
@@ -69,7 +69,7 @@ export interface TaskCreate {
   message: string;
 }
 
-export type ActualAction =
+export type ActionImpl =
   BlockPatch
   | TaskCreate
   ;
@@ -80,26 +80,30 @@ export type ActualAction =
 export interface AutomationTask extends StoreObject {
   ref: string;
   title: string;
-  source: string;
   message: string;
   status: AutomationStatus;
+  source?: {
+    runtimeId: string;
+    stepId: string;
+  };
 }
 
 export interface AutomationAction {
   id: string;
   title: string;
   enabled: boolean;
-  opts: ActualAction;
+  impl: ActionImpl;
 }
 
-export interface AutomationCondition<T = any> {
+export interface AutomationCondition {
   id: string;
   title: string;
   enabled: boolean;
-  opts: ActualCondition;
+  impl: ConditionImpl;
 }
 
 export interface AutomationNote {
+  id: string;
   title: string;
   message: string;
 }

@@ -9,9 +9,12 @@ describe('/automation/task', () => {
     id: 'test-task',
     ref: 'testing',
     title: 'Test Task',
-    source: 'jesttasktest',
     message: 'hello this is task',
     status: 'Created',
+    source: {
+      runtimeId: 'testRT',
+      stepId: 'test-step',
+    },
   };
 
   beforeEach(done => taskDb.clear().then(() => done()));

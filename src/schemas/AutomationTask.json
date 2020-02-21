@@ -7,14 +7,26 @@
     "title": {
       "type": "string"
     },
-    "source": {
-      "type": "string"
-    },
     "message": {
       "type": "string"
     },
     "status": {
       "$ref": "#/definitions/AutomationStatus"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "runtimeId": {
+          "type": "string"
+        },
+        "stepId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeId",
+        "stepId"
+      ]
     },
     "id": {
       "type": "string"
@@ -27,7 +39,6 @@
     "id",
     "message",
     "ref",
-    "source",
     "status",
     "title"
   ],
