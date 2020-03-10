@@ -14,27 +14,35 @@ import {
   AutomationTransition,
 } from './types';
 
-const end = (proc: AutomationProcess, status: AutomationStatus): AutomationProcess => {
+const endStates: AutomationStatus[] = [
+  'Done',
+  'Paused',
+  'Interrupted',
+  'Cancelled',
+  'Invalid',
+];
+
+function end(proc: AutomationProcess, status: AutomationStatus): AutomationProcess {
   logger.info(`${proc.id}::${proc.title} ended with status '${status}'`);
   proc.status = status;
   proc.end = new Date().getTime();
   return proc;
 };
 
-const interrupt = (proc: AutomationProcess): AutomationProcess => {
+function interrupt(proc: AutomationProcess): AutomationProcess {
   logger.info(`${proc.id}::${proc.title} interrupted`);
   proc.status = 'Interrupted';
   return proc;
 };
 
-const apply = async (step: AutomationStep): Promise<void> => {
+async function apply(step: AutomationStep): Promise<void> {
   for (const action of step.actions) {
     const handler = actionHandlers[action.impl.type];
     await handler.apply(action);
   }
 };
 
-const check = async (step: AutomationStep): Promise<AutomationTransition | null> => {
+async function check(step: AutomationStep): Promise<AutomationTransition | null> {
   for (const transition of step.transitions) {
     let ok = true;
     for (const condition of transition.conditions) {
@@ -51,7 +59,7 @@ const check = async (step: AutomationStep): Promise<AutomationTransition | null>
   return null;
 };
 
-const createResult = (step: AutomationStep): AutomationStepResult => {
+function createResult(step: AutomationStep): AutomationStepResult {
   return {
     id: uid(),
     title: step.title,
@@ -61,14 +69,6 @@ const createResult = (step: AutomationStep): AutomationStepResult => {
     status: 'Created',
   };
 };
-
-const endStates: AutomationStatus[] = [
-  'Done',
-  'Paused',
-  'Interrupted',
-  'Cancelled',
-  'Invalid',
-];
 
 /**
  * Update a single process.
@@ -193,7 +193,7 @@ export async function update(proc: AutomationProcess): Promise<AutomationProcess
         transition = await check(step);
       }
       catch (e) {
-        logger.error(`${proc.id}::${proc.title}::${step.title} evaluate error: ${e.message}`);
+        logger.error(`${step.id}::${step.title} evaluate error: ${e.message}`);
         return interrupt(proc);
       }
 
@@ -278,7 +278,7 @@ export class StateMachine {
       });
     }
     catch (e) {
-      logger.error(e.message);
+      logger.error(`State machine error: ${e.message}`);
     }
   }
 }
