@@ -8,21 +8,32 @@ describe('/automation/process/', () => {
   const proc: AutomationProcess = {
     id: 'test-process',
     title: 'Test Process',
+    start: new Date().getTime(),
+    end: null,
+    status: 'Created',
     steps: [{
       id: 'step-one',
       title: 'Step One',
       enabled: true,
       actions: [],
-      conditions: [],
-      notes: [],
+      transitions: [],
+    }],
+    results: [{
+      id: 'result-one',
+      title: 'Step One',
+      stepId: 'step-one',
+      start: null,
+      end: null,
+      status: 'Done',
     }],
   };
+  const server = request(app.callback());
 
   beforeEach(done => processDb.clear().then(() => done()));
 
   it('should read empty database', async () => {
-    const res = await request(app)
-      .get('/automation/process');
+    const res = await server
+      .get('/automation/process/all');
     expect(res.status).toEqual(200);
     expect(res.body).toEqual([]);
   });
@@ -32,21 +43,21 @@ describe('/automation/process/', () => {
   });
 
   it('should create process', async () => {
-    let res = await request(app)
-      .post('/automation/process')
+    let res = await server
+      .post('/automation/process/create')
       .send(proc);
 
     expect(res.status).toEqual(201);
     expect(res.body).toMatchObject(proc);
 
-    res = await request(app)
-      .get('/automation/process');
+    res = await server
+      .get('/automation/process/all');
 
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject([proc]);
 
-    res = await request(app)
-      .get('/automation/process/test-process');
+    res = await server
+      .get('/automation/process/read/test-process');
 
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject(proc);

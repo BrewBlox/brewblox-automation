@@ -48,7 +48,7 @@ steps:
 - bash: |
     echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin
     docker run --rm --privileged multiarch/qemu-user-static:register --reset
-    cp package.json docker/
+    cp package*.json docker/
     cp -r dist/ docker/
   displayName: Prepare deploy
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))

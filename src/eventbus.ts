@@ -7,7 +7,6 @@ import { lastErrors, validateMessage } from './validation';
 
 const statusExchange = 'brewcast.state';
 
-
 export class EventbusClient {
   private lastOk = true;
   private channel: Channel | null = null;

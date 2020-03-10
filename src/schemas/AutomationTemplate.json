@@ -1,45 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "start": {
-      "anyOf": [
-        {
-          "description": "Enables basic storage and retrieval of dates and times.",
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "end": {
-      "anyOf": [
-        {
-          "description": "Enables basic storage and retrieval of dates and times.",
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "status": {
-      "$ref": "#/definitions/AutomationStatus"
-    },
-    "results": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/AutomationStepResult"
-      }
-    },
     "title": {
       "type": "string"
     },
@@ -57,80 +18,11 @@
     }
   },
   "required": [
-    "end",
     "id",
-    "results",
-    "start",
-    "status",
     "steps",
     "title"
   ],
   "definitions": {
-    "AutomationStatus": {
-      "enum": [
-        "Cancelled",
-        "Created",
-        "Done",
-        "Started",
-        "Unknown"
-      ],
-      "type": "string"
-    },
-    "AutomationStepResult": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "stepId": {
-          "type": "string"
-        },
-        "start": {
-          "anyOf": [
-            {
-              "description": "Enables basic storage and retrieval of dates and times.",
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "end": {
-          "anyOf": [
-            {
-              "description": "Enables basic storage and retrieval of dates and times.",
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "status": {
-          "$ref": "#/definitions/AutomationStatus"
-        }
-      },
-      "required": [
-        "end",
-        "id",
-        "start",
-        "status",
-        "stepId",
-        "title"
-      ]
-    },
     "AutomationStep": {
       "type": "object",
       "properties": {
@@ -427,6 +319,16 @@
         "status",
         "type"
       ]
+    },
+    "AutomationStatus": {
+      "enum": [
+        "Cancelled",
+        "Created",
+        "Done",
+        "Started",
+        "Unknown"
+      ],
+      "type": "string"
     },
     "ManualAdvanceImpl": {
       "type": "object",

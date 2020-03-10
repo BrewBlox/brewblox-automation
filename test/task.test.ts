@@ -16,6 +16,7 @@ describe('/automation/task', () => {
       stepId: 'test-step',
     },
   };
+  const server = request(app.callback());
 
   beforeEach(done => taskDb.clear().then(() => done()));
 
@@ -24,74 +25,79 @@ describe('/automation/task', () => {
   });
 
   it('should read empty database', async () => {
-    const res = await request(app)
-      .get('/automation/task');
+    const res = await server
+      .get('/automation/task/all');
     expect(res.status).toEqual(200);
     expect(res.body).toEqual([]);
   });
 
   it('should create task', async () => {
-    let res = await request(app)
-      .post('/automation/task')
+    let res = await server
+      .post('/automation/task/create')
       .send(task);
 
     expect(res.status).toEqual(201);
     expect(res.body).toMatchObject(task);
 
-    res = await request(app)
-      .get('/automation/task');
+    res = await server
+      .get('/automation/task/all');
 
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject([task]);
   });
 
   it('should fail to create multiple tasks', async () => {
-    let res = await request(app)
-      .post('/automation/task')
+    let res = await server
+      .post('/automation/task/create')
       .send(task);
 
     expect(res.status).toEqual(201);
 
-    res = await request(app)
-      .post('/automation/task')
+    res = await server
+      .post('/automation/task/create')
       .send(task);
 
     expect(res.status).toBeGreaterThan(400);
   });
 
   it('should remove tasks', async () => {
-    let res = await request(app)
-      .post('/automation/task')
+    let res = await server
+      .post('/automation/task/create')
       .send(task);
 
-    const created = res.body;
+    const created: AutomationTask = res.body;
+    expect(created).toMatchObject(task);
+    expect(created._rev).toBeDefined();
 
-    res = await request(app)
-      .get(`/automation/task/${task.id}`);
+    res = await server
+      .get(`/automation/task/read/${task.id}`);
 
     expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(task);
 
-    res = await request(app)
-      .delete('/automation/task')
+    const x = await server
+      .post('/automation/task/delete')
       .send(created);
 
+    expect(x.status).toBe(200);
+
     expect(res.status).toBe(200);
 
-    res = await request(app)
-      .get(`/automation/task/${task.id}`);
+    res = await server
+      .get(`/automation/task/read/${task.id}`);
 
     expect(res.status).toBe(404);
   });
 
   it('should validate arguments', async () => {
-    let res = await request(app)
-      .post('/automation/task')
+    let res = await server
+      .post('/automation/task/create')
       .send({ id: 'flappy', content: 'fluffy bunnies' });
 
     expect(res.status).toEqual(422);
 
-    res = await request(app)
-      .post('/automation/task')
+    res = await server
+      .post('/automation/task/create')
       .send(task);
 
     const created = res.body;
@@ -99,21 +105,22 @@ describe('/automation/task', () => {
     const { title, ...shrunken } = created;
     void title;
 
-    res = await request(app)
-      .put('/automation/task')
+    res = await server
+      .post('/automation/task/update')
       .send(shrunken);
 
     expect(res.status).toEqual(422);
 
-    res = await request(app)
-      .put('/automation/task')
+    res = await server
+      .post('/automation/task/update')
       .send(extended);
 
     expect(res.status).toEqual(200);
 
-    res = await request(app)
-      .get(`/automation/task/${task.id}`);
+    res = await server
+      .get(`/automation/task/read/${task.id}`);
 
+    expect(res.status).toEqual(200);
     expect(res.body).toMatchObject({
       ...extended,
       _rev: expect.stringMatching(/\d\-[a-z0-9]+/),

@@ -3,7 +3,7 @@ import MemoryAdapter from 'pouchdb-adapter-memory';
 
 import args from './args';
 import logger from './logger';
-import { AutomationProcess, AutomationRuntime, AutomationTask, StoreObject } from './types';
+import { AutomationProcess, AutomationTask, StoreObject } from './types';
 
 type IdMeta = PouchDB.Core.IdMeta;
 type RevisionIdMeta = PouchDB.Core.RevisionIdMeta;
@@ -130,4 +130,3 @@ export class AutomationDatabase<T extends StoreObject> {
 export const database = new DatabaseClient();
 export const taskDb = new AutomationDatabase<AutomationTask>(database, 'brewblox-task');
 export const processDb = new AutomationDatabase<AutomationProcess>(database, 'brewblox-process');
-export const runtimeDb = new AutomationDatabase<AutomationRuntime>(database, 'brewblox-runtime');

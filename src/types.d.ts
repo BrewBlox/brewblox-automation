@@ -1,68 +1,45 @@
+////////////////////////////////////////////////////////////////
+// Local
+////////////////////////////////////////////////////////////////
 
 export interface StoreObject {
   id: string;
   _rev?: string;
 }
 
-type AutomationStatus = 'Created' | 'Started' | 'Done' | 'Cancelled' | 'Unknown';
+export interface EventbusMessage {
+  key: string;
+  type: string;
+  duration: string;
+  data: any;
+}
+
+export interface CachedMessage extends EventbusMessage {
+  expires: number;
+}
+
+////////////////////////////////////////////////////////////////
+// Shared
+////////////////////////////////////////////////////////////////
+
+export type AutomationStatus = 'Created' | 'Started' | 'Done' | 'Cancelled' | 'Unknown';
 
 /** @nullable */
 type Datum = Date | number | null;
 
-// Conditions
-////////////////
-
-export interface TimeAbsolute {
-  type: 'TimeAbsolute';
-  time: number | Date;
-}
-
-export interface TimeElapsed {
-  type: 'TimeElapsed';
-  duration: number;
-}
-
-export interface BlockValue {
-  type: 'BlockValue';
-  blockId: string;
-  serviceId: string;
-  blockType: string;
-  key: string;
-  operator: 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt';
-  value: any;
-}
-
-export interface TaskStatus {
-  type: 'TaskStatus';
-  ref: string;
-  status: AutomationStatus;
-}
-
-export interface ManualAdvance {
-  type: 'ManualAdvance';
-  desc: string;
-}
-
-export type ConditionImpl =
-  TimeAbsolute
-  | TimeElapsed
-  | BlockValue
-  | TaskStatus
-  | ManualAdvance
-  ;
-
+////////////////////////////////////////////////////////////////
 // Actions
-/////////////
+////////////////////////////////////////////////////////////////
 
-export interface BlockPatch {
+export interface BlockPatchImpl {
   type: 'BlockPatch';
-  blockId: string;
-  serviceId: string;
-  blockType: string;
+  serviceId: string | null;
+  blockId: string | null;
+  blockType: string | null;
   data: any;
 }
 
-export interface TaskCreate {
+export interface TaskCreateImpl {
   type: 'TaskCreate';
   ref: string;
   title: string;
@@ -70,12 +47,99 @@ export interface TaskCreate {
 }
 
 export type ActionImpl =
-  BlockPatch
-  | TaskCreate
+  BlockPatchImpl
+  | TaskCreateImpl
   ;
 
+////////////////////////////////////////////////////////////////
+// Conditions
+////////////////////////////////////////////////////////////////
+
+export interface TimeAbsoluteImpl {
+  type: 'TimeAbsolute';
+  time: number | Date;
+}
+
+export interface TimeElapsedImpl {
+  type: 'TimeElapsed';
+  duration: number;
+}
+
+export interface BlockValueImpl {
+  type: 'BlockValue';
+  serviceId: string | null;
+  blockId: string | null;
+  blockType: string | null;
+  key: string | null;
+  operator: 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt';
+  value: any;
+}
+
+export interface TaskStatusImpl {
+  type: 'TaskStatus';
+  ref: string;
+  status: AutomationStatus;
+}
+
+export interface ManualAdvanceImpl {
+  type: 'ManualAdvance';
+  desc: string;
+}
+
+export type ConditionImpl =
+  TimeAbsoluteImpl
+  | TimeElapsedImpl
+  | BlockValueImpl
+  | TaskStatusImpl
+  | ManualAdvanceImpl
+  ;
+
+////////////////////////////////////////////////////////////////
 // Generic
-//////////////
+////////////////////////////////////////////////////////////////
+
+export interface AutomationImpl {
+  type: string;
+}
+
+export interface AutomationItem<T extends AutomationImpl = AutomationImpl> {
+  id: string;
+  title: string;
+  enabled: boolean;
+  impl: T;
+}
+
+export type AutomationAction<T extends ActionImpl = ActionImpl> = AutomationItem<T>;
+export type AutomationCondition<T extends ConditionImpl = ConditionImpl> = AutomationItem<T>;
+
+export interface AutomationTransition {
+  id: string;
+  /**
+   * true: next step
+   * false: exit process
+   * string: step ID
+   */
+  next: boolean | string;
+  enabled: boolean;
+  conditions: AutomationCondition[];
+}
+
+export interface AutomationStep {
+  id: string;
+  title: string;
+  enabled: boolean;
+  actions: AutomationAction[];
+  transitions: AutomationTransition[];
+}
+
+export interface AutomationStepResult {
+  id: string;
+  title: string;
+  stepId: string;
+  start: Datum;
+  end: Datum;
+  status: AutomationStatus;
+}
 
 export interface AutomationTask extends StoreObject {
   ref: string;
@@ -88,65 +152,14 @@ export interface AutomationTask extends StoreObject {
   };
 }
 
-export interface AutomationAction {
-  id: string;
-  title: string;
-  enabled: boolean;
-  impl: ActionImpl;
-}
-
-export interface AutomationCondition {
-  id: string;
-  title: string;
-  enabled: boolean;
-  impl: ConditionImpl;
-}
-
-export interface AutomationNote {
-  id: string;
-  title: string;
-  message: string;
-}
-
-export interface AutomationStep {
-  id: string;
-  title: string;
-  enabled: boolean;
-  actions: AutomationAction[];
-  conditions: AutomationCondition[];
-  notes: AutomationNote[];
-}
-
-export interface AutomationProcess extends StoreObject {
+export interface AutomationTemplate extends StoreObject {
   title: string;
   steps: AutomationStep[];
 }
 
-export interface AutomationResult {
-  id: string;
-  title: string;
-  stepId: string;
+export interface AutomationProcess extends AutomationTemplate {
   start: Datum;
   end: Datum;
   status: AutomationStatus;
-}
-
-export interface AutomationRuntime extends StoreObject {
-  title: string;
-  processId: string;
-  results: AutomationResult[];
-  start: Datum;
-  end: Datum;
-  status: AutomationStatus;
-}
-
-export interface EventbusMessage {
-  key: string;
-  type: string;
-  duration: string;
-  data: any;
-}
-
-export interface CachedMessage extends EventbusMessage {
-  expires: number;
+  results: AutomationStepResult[];
 }

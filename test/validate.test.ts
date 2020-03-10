@@ -1,5 +1,5 @@
-import { AutomationProcess, AutomationRuntime, AutomationTask } from '../src/types';
-import { lastErrors, validateProcess, validateRuntime, validateTask } from '../src/validation';
+import { AutomationProcess, AutomationTask } from '../src/types';
+import { lastErrors, validateProcess, validateTask } from '../src/validation';
 
 describe('object validation', () => {
   it('should validate tasks', () => {
@@ -23,6 +23,9 @@ describe('object validation', () => {
   it('should validate processes', () => {
     const proc: AutomationProcess = {
       id: 'test-process',
+      start: new Date().getTime(),
+      end: null,
+      status: 'Created',
       title: 'Test Process',
       steps: [{
         id: 'step-one',
@@ -39,20 +42,28 @@ describe('object validation', () => {
             message: 'Beep boop I am robot',
           },
         }],
-        conditions: [{
-          id: 'condition-one',
-          title: 'Condition one',
-          enabled: false,
-          impl: {
-            type: 'TimeAbsolute',
-            time: new Date().getTime(),
-          },
+        transitions: [{
+          id: 'transition-one',
+          next: true,
+          enabled: true,
+          conditions: [{
+            id: 'condition-one',
+            title: 'Condition one',
+            enabled: false,
+            impl: {
+              type: 'TimeAbsolute',
+              time: new Date().getTime(),
+            },
+          }],
         }],
-        notes: [{
-          id: 'note-one',
-          title: 'Very important note',
-          message: 'Bring cookies',
-        }],
+      }],
+      results: [{
+        id: 'result-one',
+        title: 'Result one',
+        stepId: 'step-one',
+        start: new Date().getTime(),
+        end: null,
+        status: 'Cancelled',
       }],
     };
 
@@ -61,29 +72,5 @@ describe('object validation', () => {
     expect(validateProcess(proc)).toBe(true);
     expect(validateProcess({} as any)).toBe(false);
     expect(validateProcess({ ...proc, extra: true } as any)).toBe(true);
-  });
-
-  it('should validate runtimes', () => {
-    const now = new Date().getTime();
-    const rt: AutomationRuntime = {
-      id: 'rt-one',
-      title: 'Runtime one',
-      start: now - 1000,
-      end: null,
-      status: 'Started',
-      processId: 'test-process',
-      results: [{
-        id: 'result-1',
-        title: 'Step one result',
-        stepId: 'step-one',
-        start: now - 1000,
-        end: now - 100,
-        status: 'Done',
-      }],
-    };
-
-    expect(validateRuntime(rt)).toBe(true);
-    expect(validateRuntime({} as any)).toBe(false);
-    expect(validateRuntime({ ...rt, extra: true } as any)).toBe(true);
   });
 });
