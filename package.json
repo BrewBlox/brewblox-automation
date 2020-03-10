@@ -29,6 +29,7 @@
     "parse-duration": "^0.1.2",
     "pouchdb": "^7.2.1",
     "pouchdb-adapter-memory": "^7.2.1",
+    "uuid": "^7.0.2",
     "winston": "^3.2.1"
   },
   "devDependencies": {
@@ -44,6 +45,7 @@
     "@types/node": "^12.12.29",
     "@types/pouchdb": "^6.4.0",
     "@types/supertest": "^2.0.8",
+    "@types/uuid": "^7.0.0",
     "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^2.23.0",
     "@typescript-eslint/parser": "^2.23.0",

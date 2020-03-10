@@ -6,6 +6,7 @@ import { CachedMessage, EventbusMessage } from './types';
 import { lastErrors, validateMessage } from './validation';
 
 const statusExchange = 'brewcast.state';
+const publishKey = 'automation.output';
 
 export class EventbusClient {
   private lastOk = true;
@@ -60,6 +61,10 @@ export class EventbusClient {
 
   private onMessage(msg: Message): void {
     this.channel.ack(msg);
+    if (msg.fields.routingKey === publishKey) {
+      // Ignore messages sent by publish()
+      return;
+    }
     const message: EventbusMessage = JSON.parse(msg.content.toString());
     if (!validateMessage(message)) {
       logger.warn(`Discarded eventbus message from '${message.key}'`);
@@ -74,6 +79,12 @@ export class EventbusClient {
     };
   }
 
+  public async publish(msg: EventbusMessage): Promise<void> {
+    if (this.channel) {
+      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
+      this.channel.publish(statusExchange, publishKey, Buffer.from(JSON.stringify(msg)));
+    }
+  }
 }
 
 export const eventbus = new EventbusClient();

@@ -48,6 +48,9 @@
         "Cancelled",
         "Created",
         "Done",
+        "Interrupted",
+        "Invalid",
+        "Paused",
         "Started",
         "Unknown"
       ],

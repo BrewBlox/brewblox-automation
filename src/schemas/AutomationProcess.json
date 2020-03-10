@@ -71,6 +71,9 @@
         "Cancelled",
         "Created",
         "Done",
+        "Interrupted",
+        "Invalid",
+        "Paused",
         "Started",
         "Unknown"
       ],
@@ -204,15 +207,26 @@
           ]
         },
         "serviceId": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "blockId": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "blockType": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "data": {}
+        "data": {
+          "type": "null"
+        }
       },
       "required": [
         "blockId",
@@ -371,18 +385,6 @@
             "BlockValue"
           ]
         },
-        "serviceId": {
-          "type": "string"
-        },
-        "blockId": {
-          "type": "string"
-        },
-        "blockType": {
-          "type": "string"
-        },
-        "key": {
-          "type": "string"
-        },
         "operator": {
           "enum": [
             "eq",
@@ -394,7 +396,33 @@
           ],
           "type": "string"
         },
-        "value": {}
+        "serviceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "type": "null"
+        }
       },
       "required": [
         "blockId",
