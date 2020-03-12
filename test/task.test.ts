@@ -12,7 +12,7 @@ describe('/automation/task', () => {
     message: 'hello this is task',
     status: 'Created',
     source: {
-      runtimeId: 'testRT',
+      processId: 'testRT',
       stepId: 'test-step',
     },
   };

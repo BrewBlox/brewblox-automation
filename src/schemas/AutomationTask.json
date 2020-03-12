@@ -16,7 +16,7 @@
     "source": {
       "type": "object",
       "properties": {
-        "runtimeId": {
+        "processId": {
           "type": "string"
         },
         "stepId": {
@@ -24,7 +24,7 @@
         }
       },
       "required": [
-        "runtimeId",
+        "processId",
         "stepId"
       ]
     },
