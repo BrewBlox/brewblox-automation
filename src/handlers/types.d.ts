@@ -1,9 +1,15 @@
-import { ActionImpl, AutomationAction, ConditionImpl, AutomationCondition } from "../types";
+import { ActionImpl, AutomationAction, ConditionImpl, AutomationCondition, AutomationStep, AutomationProcess, AutomationStepResult } from "../types";
+
+export interface HandlerOpts {
+  proc: AutomationProcess;
+  step: AutomationStep;
+  result: AutomationStepResult;
+}
 
 export interface ActionHandler<T extends ActionImpl = ActionImpl> {
-  apply: (item: AutomationAction<T>) => Promise<void>;
+  apply: (item: AutomationAction<T>, opts: HandlerOpts) => Promise<void>;
 }
 
 export interface ConditionHandler<T extends ConditionImpl = ConditionImpl> {
-  check: (item: AutomationCondition<T>) => Promise<boolean>;
+  check: (item: AutomationCondition<T>, opts: HandlerOpts) => Promise<boolean>;
 }

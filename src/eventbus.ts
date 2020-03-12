@@ -1,8 +1,9 @@
 import amqplib, { Channel, Message } from 'amqplib';
 import parseDuration from 'parse-duration';
 
+import { blockEventType } from './getters';
 import logger from './logger';
-import { CachedMessage, EventbusMessage } from './types';
+import { Block, CachedMessage, EventbusMessage } from './types';
 import { lastErrors, validateMessage } from './validation';
 
 const statusExchange = 'brewcast.state';
@@ -26,6 +27,14 @@ export class EventbusClient {
         logger.info(`Removing expired message from '${k}'`);
         delete this.cache[k];
       });
+  }
+
+  public getCached(key: string, type: string): any {
+    return this.cache[`${type}__${key}`];
+  }
+
+  public getBlocks(serviceId: string): Block[] {
+    return this.getCached(serviceId, blockEventType) ?? [];
   }
 
   public async connect(): Promise<void> {
@@ -73,7 +82,7 @@ export class EventbusClient {
     }
     const now = new Date().getTime();
     const duration = parseDuration(message.duration);
-    this.cache[message.key] = {
+    this.cache[`${message.key}__${message.type}`] = {
       ...message,
       expires: now + duration,
     };

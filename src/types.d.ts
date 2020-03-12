@@ -18,6 +18,14 @@ export interface CachedMessage extends EventbusMessage {
   expires: number;
 }
 
+export interface Block {
+  id: string;
+  nid?: number;
+  type: string;
+  groups: number[];
+  data: any;
+}
+
 ////////////////////////////////////////////////////////////////
 // Shared
 ////////////////////////////////////////////////////////////////
@@ -166,7 +174,7 @@ export interface AutomationTask extends StoreObject {
   message: string;
   status: AutomationStatus;
   source?: {
-    runtimeId: string;
+    processId: string;
     stepId: string;
   };
 }

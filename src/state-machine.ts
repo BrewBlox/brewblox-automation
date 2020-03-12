@@ -5,6 +5,7 @@ import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { actionHandlers, conditionHandlers } from './handlers';
+import { HandlerOpts } from './handlers/types';
 import logger from './logger';
 import {
   AutomationProcess,
@@ -35,19 +36,19 @@ function interrupt(proc: AutomationProcess): AutomationProcess {
   return proc;
 };
 
-async function apply(step: AutomationStep): Promise<void> {
-  for (const action of step.actions) {
+async function apply(opts: HandlerOpts): Promise<void> {
+  for (const action of opts.step.actions.filter(v => v.enabled)) {
     const handler = actionHandlers[action.impl.type];
-    await handler.apply(action);
+    await handler.apply(action, opts);
   }
 };
 
-async function check(step: AutomationStep): Promise<AutomationTransition | null> {
-  for (const transition of step.transitions) {
+async function check(opts: HandlerOpts): Promise<AutomationTransition | null> {
+  for (const transition of opts.step.transitions.filter(v => v.enabled)) {
     let ok = true;
-    for (const condition of transition.conditions) {
+    for (const condition of transition.conditions.filter(v => v.enabled)) {
       const handler = conditionHandlers[condition.impl.type];
-      if (!await handler.check(condition)) {
+      if (!await handler.check(condition, opts)) {
         ok = false;
         break;
       }
@@ -122,6 +123,7 @@ export async function update(proc: AutomationProcess): Promise<AutomationProcess
    */
   const result = proc.results[proc.results.length - 1];
   const step = proc.steps.find(s => s.id === result.stepId);
+  const opts: HandlerOpts = { proc, step, result };
 
   /**
    * No matching step found for current result.
@@ -148,7 +150,7 @@ export async function update(proc: AutomationProcess): Promise<AutomationProcess
    */
   if (result.status === 'Created') {
     try {
-      await apply(step);
+      await apply(opts);
       result.status = 'Started';
     }
     catch (e) {
@@ -167,7 +169,7 @@ export async function update(proc: AutomationProcess): Promise<AutomationProcess
     /**
      * No transitions set. Go to next step (by index).
      */
-    if (step.transitions.length === 0) {
+    if (!step.transitions.find(v => v.enabled)) {
       // Mark result as done
       result.status = 'Done';
       result.end = new Date().getTime();
@@ -186,11 +188,11 @@ export async function update(proc: AutomationProcess): Promise<AutomationProcess
      * Evaluate transitions.
      * First one to evaluate true gets to pick next step.
      */
-    if (step.transitions.length > 0) {
+    else {
       // Find first valid transition
       let transition: AutomationTransition | null = null;
       try {
-        transition = await check(step);
+        transition = await check(opts);
       }
       catch (e) {
         logger.error(`${step.id}::${step.title} evaluate error: ${e.message}`);
