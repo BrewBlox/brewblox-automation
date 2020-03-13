@@ -1,61 +1,41 @@
-import { NextFunction, Request, Response, Router } from 'express';
+import { Middleware } from 'koa';
+import Router from 'koa-router';
 
 import { taskDb } from '../database';
-import { validateTask } from '../validation';
-import { wrap } from './utils';
+import logger from '../logger';
+import { lastErrors, validateTask } from '../validation';
 
-const validate = (req: Request, res: Response, next: NextFunction) => {
-  validateTask(req.body)
-    ? next()
-    : res.sendStatus(422);
+const validate: Middleware = async (ctx, next) => {
+  if (!validateTask(ctx.request.body)) {
+    const message = lastErrors().map(e => e.message).join(', ');
+    logger.error(message);
+    logger.debug('%o', ctx.request.body);
+    ctx.throw(422, message);
+  }
+  await next();
 };
 
-const fetchAll = async (req: Request, res: Response) => {
-  res
-    .json(await taskDb.fetchAll());
-};
+const router = new Router();
 
-const fetchById = async (req: Request, res: Response) => {
-  res
-    .json(await taskDb.fetchById(req.params.id));
-};
+router.get('/all', async (ctx) => {
+  ctx.body = await taskDb.fetchAll();
+});
 
-const create = async (req: Request, res: Response) => {
-  res
-    .status(201)
-    .json(await taskDb.create(req.body));
-};
+router.post('/create', validate, async (ctx) => {
+  ctx.body = await taskDb.create(ctx.request.body);
+  ctx.status = 201;
+});
 
-const save = async (req: Request, res: Response) => {
-  res
-    .json(await taskDb.save(req.body));
-};
+router.get('/read/:id', async (ctx) => {
+  ctx.body = await taskDb.fetchById(ctx.params.id);
+});
 
-const remove = async (req: Request, res: Response) => {
-  res
-    .json(await taskDb.remove(req.body));
-};
+router.post('/update', validate, async (ctx) => {
+  ctx.body = await taskDb.save(ctx.request.body);
+});
 
-const testCreate = async (req: Request, res: Response) => {
-  res
-    .status(201)
-    .json(await taskDb.create({
-      id: 'test-task',
-      ref: 'testing',
-      title: 'Test Task',
-      source: 'jesttasktest',
-      message: 'hello this is task',
-      status: 'Created',
-    }));
-};
-
-const router = Router({ mergeParams: true });
-router.get('/', wrap(fetchAll));
-router.get('/:id', wrap(fetchById));
-router.post('/', validate, wrap(create));
-router.put('/', validate, wrap(save));
-router.delete('/', validate, wrap(remove));
-
-router.post('/test', wrap(testCreate));
+router.post('/delete', validate, async (ctx) => {
+  ctx.body = await taskDb.remove(ctx.request.body);
+});
 
 export default router;

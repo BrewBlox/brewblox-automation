@@ -11,8 +11,8 @@ const program = getProgramFromFiles([resolve('./src/types.d.ts')]);
 
 const types = [
   'AutomationTask',
+  'AutomationTemplate',
   'AutomationProcess',
-  'AutomationRuntime',
   'EventbusMessage',
 ];
 

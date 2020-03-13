@@ -1,31 +1,32 @@
 import amqplib, { Channel, Message } from 'amqplib';
 import parseDuration from 'parse-duration';
 
+import { blockEventType } from './getters';
 import logger from './logger';
-import { CachedMessage, EventbusMessage } from './types';
+import { Block, CachedMessage, EventbusMessage } from './types';
 import { lastErrors, validateMessage } from './validation';
 
 const statusExchange = 'brewcast.state';
-
+const publishKey = 'automation.output';
 
 export class EventbusClient {
   private lastOk = true;
   private channel: Channel | null = null;
   private cache: Record<string, CachedMessage> = {};
 
-  public constructor() {
-    setInterval(() => this.cleanCache(), 10000);
+  public getCached(key: string, type: string): any | null {
+    const msg = this.cache[`${type}__${key}`];
+    if (msg === undefined) {
+      return null;
+    }
+    if (msg.received + parseDuration(msg.ttl) < new Date().getTime()) {
+      return null;
+    }
+    return msg.data;
   }
 
-  private cleanCache(): void {
-    const now = new Date().getTime();
-    Object.values(this.cache)
-      .filter(msg => msg.expires < now)
-      .map(msg => msg.key)
-      .forEach(k => {
-        logger.info(`Removing expired message from '${k}'`);
-        delete this.cache[k];
-      });
+  public getBlocks(serviceId: string): Block[] {
+    return this.getCached(serviceId, blockEventType) ?? [];
   }
 
   public async connect(): Promise<void> {
@@ -61,20 +62,29 @@ export class EventbusClient {
 
   private onMessage(msg: Message): void {
     this.channel.ack(msg);
+    if (msg.fields.routingKey === publishKey) {
+      // Ignore messages sent by publish()
+      return;
+    }
     const message: EventbusMessage = JSON.parse(msg.content.toString());
     if (!validateMessage(message)) {
       logger.warn(`Discarded eventbus message from '${message.key}'`);
       logger.warn(lastErrors());
       return;
     }
-    const now = new Date().getTime();
-    const duration = parseDuration(message.duration);
-    this.cache[message.key] = {
+
+    this.cache[`${message.key}__${message.type}`] = {
       ...message,
-      expires: now + duration,
+      received: new Date().getTime(),
     };
   }
 
+  public async publish(msg: EventbusMessage): Promise<void> {
+    if (this.channel) {
+      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
+      this.channel.publish(statusExchange, publishKey, Buffer.from(JSON.stringify(msg)));
+    }
+  }
 }
 
 export const eventbus = new EventbusClient();

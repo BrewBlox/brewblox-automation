@@ -1,46 +1,41 @@
-import { NextFunction, Request, Response, Router } from 'express';
+import { Middleware } from 'koa';
+import Router from 'koa-router';
 
 import { processDb } from '../database';
-import { validateProcess } from '../validation';
-import { wrap } from './utils';
+import logger from '../logger';
+import { lastErrors, validateProcess } from '../validation';
 
-const validate = (req: Request, res: Response, next: NextFunction) => {
-  validateProcess(req.body)
-    ? next()
-    : res.sendStatus(422);
+const validate: Middleware = async (ctx, next) => {
+  if (!validateProcess(ctx.request.body)) {
+    const message = lastErrors().map(e => e.message).join(', ');
+    logger.error(message);
+    logger.debug('%o', ctx.request.body);
+    ctx.throw(422, message);
+  }
+  await next();
 };
 
-const fetchAll = async (req: Request, res: Response) => {
-  res
-    .json(await processDb.fetchAll());
-};
+const router = new Router();
 
-const fetchById = async (req: Request, res: Response) => {
-  res
-    .json(await processDb.fetchById(req.params.id));
-};
+router.get('/all', async (ctx) => {
+  ctx.body = await processDb.fetchAll();
+});
 
-const create = async (req: Request, res: Response) => {
-  res
-    .status(201)
-    .json(await processDb.create(req.body));
-};
+router.post('/create', validate, async (ctx) => {
+  ctx.body = await processDb.create(ctx.request.body);
+  ctx.status = 201;
+});
 
-const save = async (req: Request, res: Response) => {
-  res
-    .json(await processDb.save(req.body));
-};
+router.get('/read/:id', async (ctx) => {
+  ctx.body = await processDb.fetchById(ctx.params.id);
+});
 
-const remove = async (req: Request, res: Response) => {
-  res
-    .json(await processDb.remove(req.body));
-};
+router.post('/update', validate, async (ctx) => {
+  ctx.body = await processDb.save(ctx.request.body);
+});
 
-const router = Router({ mergeParams: true });
-router.get('/', wrap(fetchAll));
-router.get('/:id', wrap(fetchById));
-router.post('/', validate, wrap(create));
-router.put('/', validate, wrap(save));
-router.delete('/', wrap(remove));
+router.post('/delete', validate, async (ctx) => {
+  ctx.body = await processDb.remove(ctx.request.body);
+});
 
 export default router;

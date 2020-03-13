@@ -1,14 +1,7 @@
 {
-  "description": "The runtime configuration and history for process execution.\nA template is copied into a process.\nFurther changes to the template will not change a running process.",
+  "description": "The static configuration for a process.",
   "type": "object",
   "properties": {
-    "results": {
-      "description": "All execution results from this process.\nThe last result is considered current.",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/AutomationStepResult"
-      }
-    },
     "title": {
       "description": "Human-readable name.",
       "type": "string"
@@ -31,63 +24,10 @@
   },
   "required": [
     "id",
-    "results",
     "steps",
     "title"
   ],
   "definitions": {
-    "AutomationStepResult": {
-      "description": "A single result from process execution.\nThese are treated as immutable: if the process advances, a new result is added.\nThe last result is treated as current.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "pattern": "^[0-9a-fA-F\\-]{36}$",
-          "type": "string"
-        },
-        "stepId": {
-          "description": "The unique ID for the relevant step.\nIs null if the result does not apply to any single step.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "date": {
-          "description": "Date when the result was generated.",
-          "type": [
-            "number",
-            "null"
-          ]
-        },
-        "stepStatus": {
-          "$ref": "#/definitions/AutomationStatus",
-          "description": "Current status for the relevant step.\nWill be Invalid if stepId is null."
-        },
-        "processStatus": {
-          "$ref": "#/definitions/AutomationStatus",
-          "description": "Current status for the entire process.\nThe process will only be evaluated if it is Active."
-        }
-      },
-      "required": [
-        "date",
-        "id",
-        "processStatus",
-        "stepId",
-        "stepStatus"
-      ]
-    },
-    "AutomationStatus": {
-      "description": "Generic status type for Automation types.\nIt is used by multiple types.",
-      "enum": [
-        "Active",
-        "Cancelled",
-        "Created",
-        "Finished",
-        "Invalid",
-        "Paused",
-        "Retrying"
-      ],
-      "type": "string"
-    },
     "AutomationStep": {
       "description": "The static definition for process functionality.\nFirst, actions are applied.\nThen, transitions are checked until one evaluates truthy.\n\nSteps are not changed during a process, and may be visited multiple times.",
       "type": "object",
@@ -451,6 +391,19 @@
         "status",
         "type"
       ]
+    },
+    "AutomationStatus": {
+      "description": "Generic status type for Automation types.\nIt is used by multiple types.",
+      "enum": [
+        "Active",
+        "Cancelled",
+        "Created",
+        "Finished",
+        "Invalid",
+        "Paused",
+        "Retrying"
+      ],
+      "type": "string"
     },
     "ManualAdvanceImpl": {
       "description": "Wait for user to manually advance to a next step.\nWill always evaluate false.",

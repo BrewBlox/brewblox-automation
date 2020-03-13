@@ -2,24 +2,45 @@
   "type": "object",
   "properties": {
     "ref": {
+      "description": "User-defined reference ID.\nNot required to be unique.",
       "type": "string"
     },
     "title": {
-      "type": "string"
-    },
-    "source": {
+      "description": "Human-readable name.",
       "type": "string"
     },
     "message": {
+      "description": "Message body.",
       "type": "string"
     },
     "status": {
-      "$ref": "#/definitions/AutomationStatus"
+      "$ref": "#/definitions/AutomationStatus",
+      "description": "Current status. May be evaluated by TaskStatusImpl"
+    },
+    "source": {
+      "description": "Tasks can be created manually, or by a process.\nIf created by a process, source will be set.\nThis allows multiple processes to re-use the same ref.",
+      "type": "object",
+      "properties": {
+        "processId": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
+          "type": "string"
+        },
+        "stepId": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "processId",
+        "stepId"
+      ]
     },
     "id": {
+      "pattern": "^[0-9a-fA-F\\-]{36}$",
       "type": "string"
     },
     "_rev": {
+      "description": "Is defined by the datastore when object is first created.\nObjects with a _rev can't be created.\nObjects without a _rev can't be saved or removed.",
       "type": "string"
     }
   },
@@ -27,18 +48,20 @@
     "id",
     "message",
     "ref",
-    "source",
     "status",
     "title"
   ],
   "definitions": {
     "AutomationStatus": {
+      "description": "Generic status type for Automation types.\nIt is used by multiple types.",
       "enum": [
+        "Active",
         "Cancelled",
         "Created",
-        "Done",
-        "Started",
-        "Unknown"
+        "Finished",
+        "Invalid",
+        "Paused",
+        "Retrying"
       ],
       "type": "string"
     }

@@ -1,15 +1,20 @@
-import { AutomationProcess, AutomationRuntime, AutomationTask } from '../src/types';
-import { lastErrors, validateProcess, validateRuntime, validateTask } from '../src/validation';
+import { v4 as uid } from 'uuid';
+
+import { AutomationProcess, AutomationTask } from '../src/types';
+import { lastErrors, validateProcess, validateTask } from '../src/validation';
 
 describe('object validation', () => {
   it('should validate tasks', () => {
     const task: AutomationTask = {
-      id: 'test-task',
+      id: uid(),
       ref: 'testing',
       title: 'Test Task',
-      source: 'jesttasktest',
       message: 'hello this is task',
       status: 'Created',
+      source: {
+        processId: uid(),
+        stepId: uid(),
+      },
     };
 
     expect(validateTask(task)).toBe(true);
@@ -18,37 +23,58 @@ describe('object validation', () => {
   });
 
   it('should validate processes', () => {
+    const procId = uid();
+    const stepId = uid();
     const proc: AutomationProcess = {
-      id: 'test-process',
+      id: procId,
       title: 'Test Process',
       steps: [{
-        id: 'step-one',
+        id: stepId,
         title: 'Step One',
-        enabled: true,
         actions: [{
-          id: 'action-one',
+          id: uid(),
           title: 'Action one',
           enabled: true,
-          opts: {
+          impl: {
             type: 'TaskCreate',
             ref: 'tasky',
             title: 'Created task',
             message: 'Beep boop I am robot',
           },
         }],
-        conditions: [{
-          id: 'condition-one',
-          title: 'Condition one',
-          enabled: false,
-          opts: {
-            type: 'TimeAbsolute',
-            time: new Date().getTime(),
-          },
+        transitions: [{
+          id: uid(),
+          next: true,
+          enabled: true,
+          conditions: [
+            {
+              id: uid(),
+              title: 'Wait until',
+              enabled: false,
+              impl: {
+                type: 'TimeAbsolute',
+                time: new Date().getTime(),
+              },
+            },
+            {
+              id: uid(),
+              title: 'Wait for',
+              enabled: true,
+              impl: {
+                type: 'TimeElapsed',
+                start: 'Step',
+                duration: 100,
+              },
+            },
+          ],
         }],
-        notes: [{
-          title: 'Very important note',
-          message: 'Bring cookies',
-        }],
+      }],
+      results: [{
+        id: uid(),
+        stepId: stepId,
+        date: new Date().getTime(),
+        stepStatus: 'Created',
+        processStatus: 'Active',
       }],
     };
 
@@ -57,29 +83,5 @@ describe('object validation', () => {
     expect(validateProcess(proc)).toBe(true);
     expect(validateProcess({} as any)).toBe(false);
     expect(validateProcess({ ...proc, extra: true } as any)).toBe(true);
-  });
-
-  it('should validate runtimes', () => {
-    const now = new Date().getTime();
-    const rt: AutomationRuntime = {
-      id: 'rt-one',
-      title: 'Runtime one',
-      start: now - 1000,
-      end: null,
-      status: 'Started',
-      processId: 'test-process',
-      results: [{
-        id: 'result-1',
-        title: 'Step one result',
-        stepId: 'step-one',
-        start: now - 1000,
-        end: now - 100,
-        status: 'Done',
-      }],
-    };
-
-    expect(validateRuntime(rt)).toBe(true);
-    expect(validateRuntime({} as any)).toBe(false);
-    expect(validateRuntime({ ...rt, extra: true } as any)).toBe(true);
   });
 });
