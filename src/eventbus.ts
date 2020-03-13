@@ -19,7 +19,7 @@ export class EventbusClient {
     if (msg === undefined) {
       return null;
     }
-    if (msg.received + parseDuration(msg.duration) < new Date().getTime()) {
+    if (msg.received + parseDuration(msg.ttl) < new Date().getTime()) {
       return null;
     }
     return msg.data;
