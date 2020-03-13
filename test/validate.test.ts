@@ -1,17 +1,19 @@
+import { v4 as uid } from 'uuid';
+
 import { AutomationProcess, AutomationTask } from '../src/types';
 import { lastErrors, validateProcess, validateTask } from '../src/validation';
 
 describe('object validation', () => {
   it('should validate tasks', () => {
     const task: AutomationTask = {
-      id: 'test-task',
+      id: uid(),
       ref: 'testing',
       title: 'Test Task',
       message: 'hello this is task',
       status: 'Created',
       source: {
-        runtimeId: 'testRT',
-        stepId: 'test-step',
+        processId: uid(),
+        stepId: uid(),
       },
     };
 
@@ -21,18 +23,16 @@ describe('object validation', () => {
   });
 
   it('should validate processes', () => {
+    const procId = uid();
+    const stepId = uid();
     const proc: AutomationProcess = {
-      id: 'test-process',
-      start: new Date().getTime(),
-      end: null,
-      status: 'Created',
+      id: procId,
       title: 'Test Process',
       steps: [{
-        id: 'step-one',
+        id: stepId,
         title: 'Step One',
-        enabled: true,
         actions: [{
-          id: 'action-one',
+          id: uid(),
           title: 'Action one',
           enabled: true,
           impl: {
@@ -43,27 +43,38 @@ describe('object validation', () => {
           },
         }],
         transitions: [{
-          id: 'transition-one',
+          id: uid(),
           next: true,
           enabled: true,
-          conditions: [{
-            id: 'condition-one',
-            title: 'Condition one',
-            enabled: false,
-            impl: {
-              type: 'TimeAbsolute',
-              time: new Date().getTime(),
+          conditions: [
+            {
+              id: uid(),
+              title: 'Wait until',
+              enabled: false,
+              impl: {
+                type: 'TimeAbsolute',
+                time: new Date().getTime(),
+              },
             },
-          }],
+            {
+              id: uid(),
+              title: 'Wait for',
+              enabled: true,
+              impl: {
+                type: 'TimeElapsed',
+                start: 'Step',
+                duration: 100,
+              },
+            },
+          ],
         }],
       }],
       results: [{
-        id: 'result-one',
-        title: 'Result one',
-        stepId: 'step-one',
-        start: new Date().getTime(),
-        end: null,
-        status: 'Cancelled',
+        id: uid(),
+        stepId: stepId,
+        date: new Date().getTime(),
+        stepStatus: 'Created',
+        processStatus: 'Active',
       }],
     };
 

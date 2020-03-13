@@ -14,23 +14,15 @@ export class EventbusClient {
   private channel: Channel | null = null;
   private cache: Record<string, CachedMessage> = {};
 
-  public constructor() {
-    setInterval(() => this.cleanCache(), 10000);
-  }
-
-  private cleanCache(): void {
-    const now = new Date().getTime();
-    Object.values(this.cache)
-      .filter(msg => msg.expires < now)
-      .map(msg => msg.key)
-      .forEach(k => {
-        logger.info(`Removing expired message from '${k}'`);
-        delete this.cache[k];
-      });
-  }
-
-  public getCached(key: string, type: string): any {
-    return this.cache[`${type}__${key}`];
+  public getCached(key: string, type: string): any | null {
+    const msg = this.cache[`${type}__${key}`];
+    if (msg === undefined) {
+      return null;
+    }
+    if (msg.received + parseDuration(msg.duration) < new Date().getTime()) {
+      return null;
+    }
+    return msg.data;
   }
 
   public getBlocks(serviceId: string): Block[] {
@@ -80,11 +72,10 @@ export class EventbusClient {
       logger.warn(lastErrors());
       return;
     }
-    const now = new Date().getTime();
-    const duration = parseDuration(message.duration);
+
     this.cache[`${message.key}__${message.type}`] = {
       ...message,
-      expires: now + duration,
+      received: new Date().getTime(),
     };
   }
 

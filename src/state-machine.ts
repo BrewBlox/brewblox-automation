@@ -5,46 +5,53 @@ import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { actionHandlers, conditionHandlers } from './handlers';
-import { HandlerOpts } from './handlers/types';
 import logger from './logger';
+import { UUID } from './shared-types';
 import {
   AutomationProcess,
-  AutomationStatus,
   AutomationStep,
   AutomationStepResult,
   AutomationTransition,
+  HandlerOpts,
 } from './types';
 
-const endStates: AutomationStatus[] = [
-  'Done',
-  'Paused',
-  'Interrupted',
-  'Cancelled',
-  'Invalid',
-];
+type UpdateResult = AutomationStepResult | null;
 
-function end(proc: AutomationProcess, status: AutomationStatus): AutomationProcess {
-  logger.info(`${proc.id}::${proc.title} ended with status '${status}'`);
-  proc.status = status;
-  proc.end = new Date().getTime();
-  return proc;
+type UpdateFunc = (opts: HandlerOpts) => Promise<UpdateResult>;
+
+
+const currentResult = (proc: AutomationProcess): AutomationStepResult => {
+  return proc.results[proc.results.length - 1] ?? null;
 };
 
-function interrupt(proc: AutomationProcess): AutomationProcess {
-  logger.info(`${proc.id}::${proc.title} interrupted`);
-  proc.status = 'Interrupted';
-  return proc;
+const currentStep = (proc: AutomationProcess): AutomationStep => {
+  const result = currentResult(proc);
+  return result
+    ? proc.steps.find(s => s.id === result.stepId)
+    : null;
 };
 
-async function apply(opts: HandlerOpts): Promise<void> {
-  for (const action of opts.step.actions.filter(v => v.enabled)) {
-    const handler = actionHandlers[action.impl.type];
-    await handler.apply(action, opts);
-  }
+/**
+ * Autofills the generic fields of a Result.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): AutomationStepResult => {
+  return {
+    id: uid(),
+    date: new Date().getTime(),
+    ...opts,
+  };
 };
 
-async function check(opts: HandlerOpts): Promise<AutomationTransition | null> {
-  for (const transition of opts.step.transitions.filter(v => v.enabled)) {
+/**
+ * Check all enabled transitions.
+ * Return the first transition that evaluates true.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const findValidTransition = async (opts: HandlerOpts): Promise<AutomationTransition | null> => {
+  for (const transition of opts.activeStep.transitions.filter(v => v.enabled)) {
     let ok = true;
     for (const condition of transition.conditions.filter(v => v.enabled)) {
       const handler = conditionHandlers[condition.impl.type];
@@ -60,197 +67,242 @@ async function check(opts: HandlerOpts): Promise<AutomationTransition | null> {
   return null;
 };
 
-function createResult(step: AutomationStep): AutomationStepResult {
-  return {
-    id: uid(),
-    title: step.title,
-    stepId: step.id,
-    start: new Date().getTime(),
-    end: null,
-    status: 'Created',
-  };
+/**
+ * Create a new Result indicating that both the current step, and the entire process are done.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const advanceToEnd = (opts: HandlerOpts): AutomationStepResult => {
+  return createResult({
+    stepId: opts.activeResult.stepId,
+    stepStatus: 'Finished',
+    processStatus: 'Finished',
+  });
 };
 
 /**
+ * Advance to the next step in the step list.
+ * If current step is the last, end the process.
+ * Always creates a new Result.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const advanceToNext = (opts: HandlerOpts): AutomationStepResult => {
+  const { proc, activeStep } = opts;
+  const stepIdx = proc.steps.findIndex(s => s.id === activeStep.id);
+  const nextStep = proc.steps[stepIdx + 1];
+  return nextStep
+    ? createResult({
+      stepId: nextStep.id,
+      stepStatus: 'Created',
+      processStatus: 'Active',
+    })
+    : advanceToEnd(opts);
+};
+
+/**
+ * Find the next step by its ID, and create a Result with the new stepId.
+ *
+ * @param opts Handler opts containing process and computed values.
+ * @param stepId Unique ID of target step.
+ */
+const advanceToId = (opts: HandlerOpts, stepId: UUID): AutomationStepResult => {
+  const { proc } = opts;
+  const nextStep = proc.steps.find(s => s.id === stepId);
+  return nextStep
+    ? createResult({
+      stepId,
+      stepStatus: 'Created',
+      processStatus: 'Active',
+    })
+    : createResult({
+      stepId: null,
+      stepStatus: 'Invalid',
+      processStatus: 'Invalid',
+    });
+};
+
+/**
+ * Identify the next step, and return a relevant Result.
+ *
+ * @param opts Handler opts containing process and computed values.
+ * @param transition Transition object that evaluated true.
+ */
+const advance = (opts: HandlerOpts, transition: AutomationTransition): AutomationStepResult => {
+  if (transition.next === false) {
+    return advanceToEnd(opts);
+  }
+  else if (transition.next === true) {
+    return advanceToNext(opts);
+  }
+  else if (isString(transition.next)) {
+    return advanceToId(opts, transition.next);
+  }
+  else {
+    // Not normal flow
+    // This scenario should be prevented by validating the template
+    return createResult({
+      stepId: opts.activeStep.id,
+      stepStatus: 'Invalid',
+      processStatus: 'Invalid',
+    });
+  }
+};
+
+/**
+ * Create Result if none yet set in this process.
+ * All subsequent update functions expect activeStep and activeResult to be set.
+ *
+ * If the process doesn't have any steps,
+ * the generated result will immediately have the Finished status.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const initialResult: UpdateFunc = async ({ proc, activeResult }) => {
+  if (activeResult) {
+    return null;
+  }
+  return proc.steps.length > 0
+    ? createResult({
+      stepId: proc.steps[0].id,
+      stepStatus: 'Created',
+      processStatus: 'Active',
+    })
+    : createResult({
+      stepId: null,
+      stepStatus: 'Invalid',
+      processStatus: 'Finished',
+    });
+};
+
+/**
+ * Check whether the update for this process should be aborted.
+ * Return active result to signal nothing new should be expected.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const earlyExit: UpdateFunc = async ({ activeResult }) => {
+  if (activeResult.processStatus !== 'Active') {
+    return activeResult;
+  }
+  return null;
+};
+
+/**
+ * Apply step actions if it hasn't been done yet.
+ * If any action handler throws an error, return a Result with status 'Retrying'.
+ * Return activeResult for subsequent fails.
+ *
+ * After applying actions, return a Result with status 'Active'.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const applyActions: UpdateFunc = async (opts) => {
+  const { activeStep, activeResult } = opts;
+  if (activeResult.stepStatus === 'Active') {
+    return null;
+  }
+
+  try {
+    for (const action of activeStep.actions.filter(v => v.enabled)) {
+      const handler = actionHandlers[action.impl.type];
+      await handler.apply(action, opts);
+    }
+    return createResult({
+      stepId: activeStep.id,
+      stepStatus: 'Active',
+      processStatus: 'Active',
+    });
+  }
+  catch (e) {
+    if (activeResult.stepStatus === 'Retrying') {
+      return activeResult;
+    }
+    else {
+      logger.error(`${activeStep.id}::${activeStep.title} apply error: ${e.message}`);
+      return createResult({
+        stepId: activeStep.id,
+        stepStatus: 'Retrying',
+        processStatus: 'Active',
+      });
+    }
+  }
+};
+
+/**
+ * Evaluate all step transitions.
+ * If a transition evaluates true,
+ * return a Result with status Created, and the new step ID
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const checkTransitions: UpdateFunc = async (opts) => {
+  const { activeStep, activeResult } = opts;
+
+  // Immediately go to next step if there aren't any transitions
+  if (!activeStep.transitions.find(v => v.enabled)) {
+    return advanceToNext(opts);
+  }
+
+  try {
+    const transition = await findValidTransition(opts);
+    return transition
+      ? advance(opts, transition)
+      : null;
+  }
+  catch (e) {
+    logger.error(`${activeStep.id}::${activeStep.title} evaluate error: ${e.message}`);
+    return activeResult;
+  }
+};
+
+/**
+ * Find and return the next relevant result.
+ * Returns null if no more results should be expected this run() cycle.
+ *
+ * @param proc The evaluated process.
+ * @returns A new result, if available.
+ */
+export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateResult> {
+  const opts: HandlerOpts = {
+    proc,
+    activeStep: currentStep(proc),
+    activeResult: currentResult(proc),
+  };
+  const result = null
+    ?? await initialResult(opts)
+    ?? await earlyExit(opts)
+    ?? await applyActions(opts)
+    ?? await checkTransitions(opts);
+
+  /**
+   * We allow subroutines to return activeResult.
+   * This signals that the subroutine is still busy, but has no news.
+   *
+   * If this happens, return null instead of the duplicate.
+   */
+  return result.id !== opts.activeResult?.id
+    ? result
+    : null;
+}
+
+/**
  * Update a single process.
- * Will apply actions, and transition between steps.
+ * Will apply actions and check transitions.
  *
  * @param proc The evaluated process
  * @returns the updated process if the process was changed.
  */
-export async function update(proc: AutomationProcess): Promise<AutomationProcess | null> {
-  /**
-   * Nothing to see here.
-   * Move along.
-   */
-  if (endStates.includes(proc.status)) {
-    return null;
-  }
-
-  /**
-   * Not all paths lead to an early exit.
-   * Keep track of the "before" state.
-   */
-  const original = JSON.stringify(proc);
-
-  /**
-   * First update for this process.
-   */
-  if (proc.status === 'Created') {
-    proc.start = new Date().getTime();
-    proc.status = 'Started';
-  }
-
-  /**
-   * Process doesn't have any steps.
-   * Immediately mark as done.
-   */
-  if (proc.steps.length === 0) {
-    return end(proc, 'Done');
-  }
-
-  /**
-   * Process doesn't have any results.
-   * Initialize one for the first step.
-   */
-  if (proc.results.length === 0) {
-    const [step] = proc.steps;
-    proc.results.push(createResult(step));
-  }
-
-  /**
-   * Find current result and step.
-   */
-  const result = proc.results[proc.results.length - 1];
-  const step = proc.steps.find(s => s.id === result.stepId);
-  const opts: HandlerOpts = { proc, step, result };
-
-  /**
-   * No matching step found for current result.
-   * This is not normal flow.
-   * Abort the process.
-   */
-  if (step === undefined) {
-    logger.error(`Invalid step ID in result: ${result.stepId}`);
-    return end(proc, 'Invalid');
-  }
-
-  /**
-   * Current result ended before process end.
-   * This is not normal flow.
-   * Abort the process.
-   */
-  if (endStates.includes(result.status)) {
-    logger.error(`Last result ended before process: '${result.status}'`);
-    return end(proc, 'Invalid');
-  }
-
-  /**
-   * Step was not yet started. Apply actions.
-   */
-  if (result.status === 'Created') {
-    try {
-      await apply(opts);
-      result.status = 'Started';
+export async function updateProcess(proc: AutomationProcess): Promise<AutomationProcess | null> {
+  let changed = false;
+  while (true) {
+    const result = await nextUpdateResult(proc);
+    if (!result) {
+      return changed ? proc : null;
     }
-    catch (e) {
-      logger.error(`${step.id}::${step.title} apply error: ${e.message}`);
-      return interrupt(proc);
-    }
+    changed = true;
+    proc.results.push(result);
   }
-
-  /**
-   * Step in progress. Evaluate all transitions.
-   * If no transitions are set, the process will continue to next step (by index).
-   *
-   * A transition without conditions will evaluate true.
-   */
-  if (result.status === 'Started') {
-    /**
-     * No transitions set. Go to next step (by index).
-     */
-    if (!step.transitions.find(v => v.enabled)) {
-      // Mark result as done
-      result.status = 'Done';
-      result.end = new Date().getTime();
-
-      // Go to: next step (by index)
-      const stepIdx = proc.steps.findIndex(s => s.id === step.id);
-      const nextStep = proc.steps[stepIdx + 1];
-      if (nextStep) {
-        proc.results.push(createResult(nextStep));
-      }
-      else {
-        return end(proc, 'Done');
-      }
-    }
-    /**
-     * Evaluate transitions.
-     * First one to evaluate true gets to pick next step.
-     */
-    else {
-      // Find first valid transition
-      let transition: AutomationTransition | null = null;
-      try {
-        transition = await check(opts);
-      }
-      catch (e) {
-        logger.error(`${step.id}::${step.title} evaluate error: ${e.message}`);
-        return interrupt(proc);
-      }
-
-      if (transition) {
-        // Mark result as done
-        result.status = 'Done';
-        result.end = new Date().getTime();
-
-        // Go to: next step (by step ID)
-        if (isString(transition.next)) {
-          const nextStep = proc.steps.find(s => s.id === transition.next);
-          if (nextStep) {
-            proc.results.push(createResult(nextStep));
-          }
-          else {
-            // Referenced step ID doesn't exist
-            // Abort process
-            logger.error(`Invalid step ID in transition.next: '${transition.next}'`);
-            return end(proc, 'Invalid');
-          }
-        }
-
-        // Go to: next step (by index)
-        else if (transition.next === true) {
-          const stepIdx = proc.steps.findIndex(s => s.id === step.id);
-          const nextStep = proc.steps[stepIdx + 1];
-          if (nextStep) {
-            proc.results.push(createResult(nextStep));
-          }
-          else {
-            return end(proc, 'Done');
-          }
-        }
-
-        // Go to: process end
-        else if (transition.next === false) {
-          return end(proc, 'Done');
-        }
-
-        // Invalid value for transition.next
-        // Abort process
-        else {
-          logger.error(`Invalid value for transition.next: '${transition.next}'`);
-          return end(proc, 'Invalid');
-        }
-      }
-    }
-  }
-
-  /**
-   * Check whether process was changed
-   */
-  return JSON.stringify(proc) !== original
-    ? proc
-    : null;
 }
 
 export class StateMachine {
@@ -263,7 +315,7 @@ export class StateMachine {
   public async run(): Promise<void> {
     try {
       for (const proc of await processDb.fetchAll()) {
-        const updated = await update(proc);
+        const updated = await updateProcess(proc);
         if (updated) {
           await processDb.save(updated);
         }
@@ -276,7 +328,7 @@ export class StateMachine {
         key: args.name,
         type: 'Automation.active',
         data: { processes, tasks },
-        duration: '60s',
+        ttl: '60s',
       });
     }
     catch (e) {

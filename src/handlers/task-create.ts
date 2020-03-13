@@ -10,7 +10,7 @@ import { ActionHandler } from './types';
  * It is possible to create two tasks with the same ref.
  */
 const handler: ActionHandler<TaskCreateImpl> = {
-  async apply({ impl }, { proc, step }) {
+  async apply({ impl }, { proc, activeStep }) {
     const { ref, title, message } = impl;
     await taskDb.create({
       id: uid(),
@@ -20,7 +20,7 @@ const handler: ActionHandler<TaskCreateImpl> = {
       status: 'Created',
       source: {
         processId: proc.id,
-        stepId: step.id,
+        stepId: activeStep.id,
       },
     });
   },

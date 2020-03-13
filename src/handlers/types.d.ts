@@ -1,10 +1,4 @@
-import { ActionImpl, AutomationAction, ConditionImpl, AutomationCondition, AutomationStep, AutomationProcess, AutomationStepResult } from "../types";
-
-export interface HandlerOpts {
-  proc: AutomationProcess;
-  step: AutomationStep;
-  result: AutomationStepResult;
-}
+import { ActionImpl, AutomationAction, ConditionImpl, AutomationCondition, AutomationStep, AutomationProcess, AutomationStepResult, HandlerOpts } from "../types";
 
 export interface ActionHandler<T extends ActionImpl = ActionImpl> {
   apply: (item: AutomationAction<T>, opts: HandlerOpts) => Promise<void>;

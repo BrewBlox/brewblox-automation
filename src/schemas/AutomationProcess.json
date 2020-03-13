@@ -1,158 +1,114 @@
 {
+  "description": "The runtime configuration and history for process execution.\nA template is copied into a process.\nFurther changes to the template will not change a running process.",
   "type": "object",
   "properties": {
-    "start": {
-      "anyOf": [
-        {
-          "description": "Enables basic storage and retrieval of dates and times.",
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "end": {
-      "anyOf": [
-        {
-          "description": "Enables basic storage and retrieval of dates and times.",
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "status": {
-      "$ref": "#/definitions/AutomationStatus"
-    },
     "results": {
+      "description": "All execution results from this process.\nThe last result is considered current.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AutomationStepResult"
       }
     },
     "title": {
+      "description": "Human-readable name.",
       "type": "string"
     },
     "steps": {
+      "description": "Step objects.\nThe process always starts at the first step.\nBy default, steps are visited in listed order.\nTransitions may override this behavior.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AutomationStep"
       }
     },
     "id": {
+      "pattern": "^[0-9a-fA-F\\-]{36}$",
       "type": "string"
     },
     "_rev": {
+      "description": "Is defined by the datastore when object is first created.\nObjects with a _rev can't be created.\nObjects without a _rev can't be saved or removed.",
       "type": "string"
     }
   },
   "required": [
-    "end",
     "id",
     "results",
-    "start",
-    "status",
     "steps",
     "title"
   ],
   "definitions": {
-    "AutomationStatus": {
-      "enum": [
-        "Cancelled",
-        "Created",
-        "Done",
-        "Interrupted",
-        "Invalid",
-        "Paused",
-        "Started",
-        "Unknown"
-      ],
-      "type": "string"
-    },
     "AutomationStepResult": {
+      "description": "A single result from process execution.\nThese are treated as immutable: if the process advances, a new result is added.\nThe last result is treated as current.",
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
-        },
-        "title": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
           "type": "string"
         },
         "stepId": {
-          "type": "string"
-        },
-        "start": {
-          "anyOf": [
-            {
-              "description": "Enables basic storage and retrieval of dates and times.",
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "description": "The unique ID for the relevant step.\nIs null if the result does not apply to any single step.",
+          "type": [
+            "string",
+            "null"
           ]
         },
-        "end": {
-          "anyOf": [
-            {
-              "description": "Enables basic storage and retrieval of dates and times.",
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+        "date": {
+          "description": "Date when the result was generated.",
+          "type": [
+            "number",
+            "null"
           ]
         },
-        "status": {
-          "$ref": "#/definitions/AutomationStatus"
+        "stepStatus": {
+          "$ref": "#/definitions/AutomationStatus",
+          "description": "Current status for the relevant step.\nWill be Invalid if stepId is null."
+        },
+        "processStatus": {
+          "$ref": "#/definitions/AutomationStatus",
+          "description": "Current status for the entire process.\nThe process will only be evaluated if it is Active."
         }
       },
       "required": [
-        "end",
+        "date",
         "id",
-        "start",
-        "status",
+        "processStatus",
         "stepId",
-        "title"
+        "stepStatus"
       ]
     },
+    "AutomationStatus": {
+      "description": "Generic status type for Automation types.\nIt is used by multiple types.",
+      "enum": [
+        "Active",
+        "Cancelled",
+        "Created",
+        "Finished",
+        "Invalid",
+        "Paused",
+        "Retrying"
+      ],
+      "type": "string"
+    },
     "AutomationStep": {
+      "description": "The static definition for process functionality.\nFirst, actions are applied.\nThen, transitions are checked until one evaluates truthy.\n\nSteps are not changed during a process, and may be visited multiple times.",
       "type": "object",
       "properties": {
         "id": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
           "type": "string"
         },
         "title": {
+          "description": "Human-readable name.",
           "type": "string"
         },
-        "enabled": {
-          "type": "boolean"
-        },
         "actions": {
+          "description": "Actions are applied in order.\nIf any action fails, all are retried.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationAction<ActionImpl>"
           }
         },
         "transitions": {
+          "description": "Transitions are checked in order.\nThe first transition to evaluate true gets to pick the next step.\nIf no transitions are set, the process immediates continues to the next step.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationTransition"
@@ -161,13 +117,13 @@
       },
       "required": [
         "actions",
-        "enabled",
         "id",
         "title",
         "transitions"
       ]
     },
     "AutomationAction<ActionImpl>": {
+      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
       "type": "object",
       "properties": {
         "id": {
@@ -198,6 +154,7 @@
       ]
     },
     "BlockPatchImpl": {
+      "description": "Update block.data with given object.",
       "type": "object",
       "properties": {
         "type": {
@@ -207,25 +164,38 @@
           ]
         },
         "serviceId": {
+          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockId": {
+          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockType": {
+          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
           "type": [
             "string",
             "null"
           ]
         },
         "data": {
-          "type": "null"
+          "anyOf": [
+            {
+              "description": "Data to be merged into the existing block.data object.",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -237,6 +207,7 @@
       ]
     },
     "TaskCreateImpl": {
+      "description": "Create a new Task.\nStatus can be checked later with the TaskStatusImpl condition.",
       "type": "object",
       "properties": {
         "type": {
@@ -246,12 +217,15 @@
           ]
         },
         "ref": {
+          "description": "User-defined reference key.\nNot guaranteed to be unique.",
           "type": "string"
         },
         "title": {
+          "description": "Human readable title for the created task.",
           "type": "string"
         },
         "message": {
+          "description": "Message for the created task.",
           "type": "string"
         }
       },
@@ -263,9 +237,11 @@
       ]
     },
     "AutomationTransition": {
+      "description": "Object defining how a process can move from one step to another.\nCombining transitions allows for branching and while() behavior.",
       "type": "object",
       "properties": {
         "id": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
           "type": "string"
         },
         "next": {
@@ -276,9 +252,11 @@
           ]
         },
         "enabled": {
+          "description": "A transition must be enabled for it to be evaluated.",
           "type": "boolean"
         },
         "conditions": {
+          "description": "All conditions in a transition must evaluate true.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
@@ -293,6 +271,7 @@
       ]
     },
     "AutomationCondition<ConditionImpl>": {
+      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
       "type": "object",
       "properties": {
         "id": {
@@ -332,6 +311,7 @@
       ]
     },
     "TimeAbsoluteImpl": {
+      "description": "Waits until current time is later than desired.\nEvaluate: now() > time.",
       "type": "object",
       "properties": {
         "type": {
@@ -341,15 +321,10 @@
           ]
         },
         "time": {
-          "anyOf": [
-            {
-              "description": "Enables basic storage and retrieval of dates and times.",
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "number"
-            }
+          "description": "Desired time.",
+          "type": [
+            "number",
+            "null"
           ]
         }
       },
@@ -359,6 +334,7 @@
       ]
     },
     "TimeElapsedImpl": {
+      "description": "Waits until enough time has elapsed since start point.\nEvaluate: now() > start + duration.",
       "type": "object",
       "properties": {
         "type": {
@@ -367,16 +343,27 @@
             "TimeElapsed"
           ]
         },
+        "start": {
+          "description": "Used start point.",
+          "enum": [
+            "Process",
+            "Step"
+          ],
+          "type": "string"
+        },
         "duration": {
+          "description": "In milliseconds.",
           "type": "number"
         }
       },
       "required": [
         "duration",
+        "start",
         "type"
       ]
     },
     "BlockValueImpl": {
+      "description": "A specific field in block.data must compare truthy.\nEvaluate: block.data[key] OPERATOR value",
       "type": "object",
       "properties": {
         "type": {
@@ -385,7 +372,40 @@
             "BlockValue"
           ]
         },
+        "serviceId": {
+          "description": "Part of the unique identifier for a block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockId": {
+          "description": "Part of the unique identifier for a block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockType": {
+          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "key": {
+          "description": "Key of a top-level object within block.data.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "description": "Compared value.",
+          "type": "null"
+        },
         "operator": {
+          "description": "Comparison approach.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",
           "enum": [
             "eq",
             "ge",
@@ -395,33 +415,6 @@
             "ne"
           ],
           "type": "string"
-        },
-        "serviceId": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "blockId": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "blockType": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "key": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "value": {
-          "type": "null"
         }
       },
       "required": [
@@ -435,6 +428,7 @@
       ]
     },
     "TaskStatusImpl": {
+      "description": "Compare status of matching tasks with given status.\nEvaluate: validTasks.all(task => task.status === status)",
       "type": "object",
       "properties": {
         "type": {
@@ -444,10 +438,12 @@
           ]
         },
         "ref": {
+          "description": "The user-defined reference key.\nMust match those set in TaskCreate.\nIf multiple tasks share the same ref key,\nall must match the given status.",
           "type": "string"
         },
         "status": {
-          "$ref": "#/definitions/AutomationStatus"
+          "$ref": "#/definitions/AutomationStatus",
+          "description": "Desired status."
         }
       },
       "required": [
@@ -457,6 +453,7 @@
       ]
     },
     "ManualAdvanceImpl": {
+      "description": "Wait for user to manually advance to a next step.\nWill always evaluate false.",
       "type": "object",
       "properties": {
         "type": {
@@ -466,6 +463,7 @@
           ]
         },
         "desc": {
+          "description": "Human-readable description.",
           "type": "string"
         }
       },

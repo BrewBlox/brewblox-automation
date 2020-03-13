@@ -19,7 +19,7 @@ const handler: ActionHandler<BlockPatchImpl> = {
       .find(v => v.id === impl.blockId);
 
     if (!block) {
-      throw new Error(`Block ${impl.serviceId}::${impl.blockId} when applying ${title}`);
+      throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when applying ${title}`);
     }
 
     // Filter keys with the same root but a different postfix

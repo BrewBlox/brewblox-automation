@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { v4 as uid } from 'uuid';
 
 import app from '../src/app';
 import { database, taskDb } from '../src/database';
@@ -6,14 +7,14 @@ import { AutomationTask } from '../src/types';
 
 describe('/automation/task', () => {
   const task: AutomationTask = {
-    id: 'test-task',
+    id: uid(),
     ref: 'testing',
     title: 'Test Task',
     message: 'hello this is task',
     status: 'Created',
     source: {
-      processId: 'testRT',
-      stepId: 'test-step',
+      processId: uid(),
+      stepId: uid(),
     },
   };
   const server = request(app.callback());
