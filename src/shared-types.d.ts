@@ -420,3 +420,11 @@ export interface AutomationProcess extends AutomationTemplate {
    */
   results: AutomationStepResult[];
 }
+
+/**
+ * Data payload of state events pushed by the automation service.
+ */
+export interface AutomationEventData {
+  processes: AutomationProcess[];
+  tasks: AutomationTask[];
+}
