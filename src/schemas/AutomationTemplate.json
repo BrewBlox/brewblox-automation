@@ -238,7 +238,7 @@
               "$ref": "#/definitions/TaskStatusImpl"
             },
             {
-              "$ref": "#/definitions/ManualAdvanceImpl"
+              "$ref": "#/definitions/AlwaysFalseImpl"
             }
           ]
         }
@@ -405,14 +405,14 @@
       ],
       "type": "string"
     },
-    "ManualAdvanceImpl": {
-      "description": "Wait for user to manually advance to a next step.\nWill always evaluate false.",
+    "AlwaysFalseImpl": {
+      "description": "Enforces a stop in step execution that must be manually overridden.",
       "type": "object",
       "properties": {
         "type": {
           "type": "string",
           "enum": [
-            "ManualAdvance"
+            "AlwaysFalse"
           ]
         },
         "desc": {

@@ -15,7 +15,7 @@
     "watch": "nodemon --watch 'src/**/*' --exec ts-node ./src/main.ts",
     "test": "jest --detectOpenHandles --coverage --verbose",
     "test:watch": "npm run test -- --watchAll",
-    "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet"
+    "lint": "tsc --noEmit && eslint \"src/**/*.{js,ts}\" --quiet"
   },
   "dependencies": {
     "ajv": "^6.12.0",

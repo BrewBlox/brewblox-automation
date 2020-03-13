@@ -248,11 +248,10 @@ export interface TaskStatusImpl {
 }
 
 /**
- * Wait for user to manually advance to a next step.
- * Will always evaluate false.
+ * Enforces a stop in step execution that must be manually overridden.
  */
-export interface ManualAdvanceImpl {
-  type: 'ManualAdvance';
+export interface AlwaysFalseImpl {
+  type: 'AlwaysFalse';
 
   /**
    * Human-readable description.
@@ -268,7 +267,7 @@ export type ConditionImpl =
   | TimeElapsedImpl
   | BlockValueImpl
   | TaskStatusImpl
-  | ManualAdvanceImpl
+  | AlwaysFalseImpl
   ;
 
 ////////////////////////////////////////////////////////////////

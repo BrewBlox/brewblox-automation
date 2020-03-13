@@ -1,7 +1,7 @@
 import { ActionImpl, ConditionImpl } from '../types';
+import AlwaysFalse from './always-false';
 import BlockPatch from './block-patch';
 import BlockValue from './block-value';
-import ManualAdvance from './manual-advance';
 import TaskCreate from './task-create';
 import TaskStatus from './task-status';
 import TimeAbsolute from './time-absolute';
@@ -15,7 +15,7 @@ export const actionHandlers: Record<ActionImpl['type'], ActionHandler> = {
 
 export const conditionHandlers: Record<ConditionImpl['type'], ConditionHandler> = {
   BlockValue,
-  ManualAdvance,
+  AlwaysFalse,
   TaskStatus,
   TimeAbsolute,
   TimeElapsed,
