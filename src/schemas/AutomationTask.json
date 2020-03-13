@@ -17,23 +17,24 @@
       "$ref": "#/definitions/AutomationStatus",
       "description": "Current status. May be evaluated by TaskStatusImpl"
     },
-    "source": {
-      "description": "Tasks can be created manually, or by a process.\nIf created by a process, source will be set.\nThis allows multiple processes to re-use the same ref.",
-      "type": "object",
-      "properties": {
-        "processId": {
-          "pattern": "^[0-9a-fA-F\\-]{36}$",
-          "type": "string"
-        },
-        "stepId": {
-          "pattern": "^[0-9a-fA-F\\-]{36}$",
-          "type": "string"
-        }
-      },
-      "required": [
-        "processId",
-        "stepId"
-      ]
+    "createdBy": {
+      "description": "Tasks can be created manually, or by a process.\nIf created by a process, processId and stepId will be set.\nThis allows multiple processes to re-use the same ref.",
+      "enum": [
+        "Action",
+        "Condition",
+        "User"
+      ],
+      "type": "string"
+    },
+    "processId": {
+      "pattern": "^[0-9a-fA-F\\-]{36}$",
+      "description": "Set if automatically created.",
+      "type": "string"
+    },
+    "stepId": {
+      "pattern": "^[0-9a-fA-F\\-]{36}$",
+      "description": "Set if automatically created.",
+      "type": "string"
     },
     "id": {
       "pattern": "^[0-9a-fA-F\\-]{36}$",
@@ -45,6 +46,7 @@
     }
   },
   "required": [
+    "createdBy",
     "id",
     "message",
     "ref",

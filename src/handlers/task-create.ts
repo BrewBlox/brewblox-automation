@@ -18,10 +18,9 @@ const handler: ActionHandler<TaskCreateImpl> = {
       title,
       message,
       status: 'Created',
-      source: {
-        processId: proc.id,
-        stepId: activeStep.id,
-      },
+      processId: proc.id,
+      stepId: activeStep.id,
+      createdBy: 'Action',
     });
   },
 };

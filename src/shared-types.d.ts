@@ -61,13 +61,20 @@ export interface AutomationTask extends StoreObject {
 
   /**
    * Tasks can be created manually, or by a process.
-   * If created by a process, source will be set.
+   * If created by a process, processId and stepId will be set.
    * This allows multiple processes to re-use the same ref.
    */
-  source?: {
-    processId: UUID;
-    stepId: UUID;
-  };
+  createdBy: 'User' | 'Action' | 'Condition';
+
+  /**
+   * Set if automatically created.
+   */
+  processId?: UUID;
+
+  /**
+   * Set if automatically created.
+   */
+  stepId?: UUID;
 }
 
 ////////////////////////////////////////////////////////////////

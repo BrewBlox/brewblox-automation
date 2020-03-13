@@ -12,10 +12,9 @@ describe('/automation/task', () => {
     title: 'Test Task',
     message: 'hello this is task',
     status: 'Created',
-    source: {
-      processId: uid(),
-      stepId: uid(),
-    },
+    processId: uid(),
+    stepId: uid(),
+    createdBy: 'Action',
   };
   const server = request(app.callback());
 
