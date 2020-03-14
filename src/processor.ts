@@ -305,14 +305,14 @@ export async function updateProcess(proc: AutomationProcess): Promise<Automation
   }
 }
 
-export class StateMachine {
+export class Processor {
 
   public start(): void {
-    logger.info('Started state machine');
-    setInterval(() => this.run(), 5000);
+    logger.info('Started processor');
+    setInterval(() => this.update(), 5000);
   }
 
-  public async run(): Promise<void> {
+  public async update(): Promise<void> {
     try {
       for (const proc of await processDb.fetchAll()) {
         const updated = await updateProcess(proc);
@@ -332,9 +332,9 @@ export class StateMachine {
       });
     }
     catch (e) {
-      logger.error(`State machine error: ${e.message}`);
+      logger.error(`Processor error: ${e.message}`);
     }
   }
 }
 
-export const stateMachine = new StateMachine();
+export const processor = new Processor();
