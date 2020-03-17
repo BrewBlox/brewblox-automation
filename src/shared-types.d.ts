@@ -8,8 +8,8 @@
  */
 export type AutomationStatus =
   'Invalid'       // Configuration missing or invalid.
-  | 'Created'     // In progress. May require initialization.
-  | 'Active'      // In progress. Initialization done or not required.
+  | 'Created'     // In progress. Not yet evaluated.
+  | 'Active'      // In progress.
   | 'Retrying'    // In progress. Attempting to automatically recover from error.
   | 'Paused'      // In progress. Execution temporarily halted.
   | 'Finished'    // End state. Success.
@@ -342,6 +342,11 @@ export interface AutomationStep {
    * Human-readable name.
    */
   title: string;
+
+  /**
+   * Preconditions must evaluate true before actions are applied.
+   */
+  preconditions: AutomationCondition[];
 
   /**
    * Actions are applied in order.

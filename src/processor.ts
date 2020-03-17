@@ -6,7 +6,7 @@ import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { actionHandlers, conditionHandlers } from './handlers';
 import logger from './logger';
-import { UUID } from './shared-types';
+import { AutomationCondition, UUID } from './shared-types';
 import {
   AutomationProcess,
   AutomationStep,
@@ -44,6 +44,16 @@ const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): Automati
   };
 };
 
+const evaluateConditions = async (opts: HandlerOpts, conditions: AutomationCondition[]): Promise<boolean> => {
+  for (const condition of conditions.filter(v => v.enabled)) {
+    const handler = conditionHandlers[condition.impl.type];
+    if (!await handler.check(condition, opts)) {
+      return false;
+    }
+  }
+  return true;
+};
+
 /**
  * Check all enabled transitions.
  * Return the first transition that evaluates true.
@@ -52,15 +62,7 @@ const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): Automati
  */
 const findValidTransition = async (opts: HandlerOpts): Promise<AutomationTransition | null> => {
   for (const transition of opts.activeStep.transitions.filter(v => v.enabled)) {
-    let ok = true;
-    for (const condition of transition.conditions.filter(v => v.enabled)) {
-      const handler = conditionHandlers[condition.impl.type];
-      if (!await handler.check(condition, opts)) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) {
+    if (await evaluateConditions(opts, transition.conditions)) {
       return transition;
     }
   }
@@ -189,6 +191,28 @@ const earlyExit: UpdateFunc = async ({ activeResult }) => {
 };
 
 /**
+ * Evaluate preconditions if step is Created.
+ * If step already progressed to Active / Retrying, preconditions are not re-evaluated.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const checkPreconditions: UpdateFunc = async (opts) => {
+  const { activeStep, activeResult } = opts;
+  if (activeResult.stepStatus !== 'Created') {
+    return null;
+  }
+  try {
+    return await evaluateConditions(opts, activeStep.preconditions)
+      ? null
+      : activeResult;
+  }
+  catch (e) {
+    logger.error(`${activeStep.id}::${activeStep.title} precondition error: ${e.message}`);
+    return activeResult;
+  }
+};
+
+/**
  * Apply step actions if it hasn't been done yet.
  * If any action handler throws an error, return a Result with status 'Retrying'.
  * Return activeResult for subsequent fails.
@@ -272,6 +296,7 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
   const result = null
     ?? await initialResult(opts)
     ?? await earlyExit(opts)
+    ?? await checkPreconditions(opts)
     ?? await applyActions(opts)
     ?? await checkTransitions(opts);
 
