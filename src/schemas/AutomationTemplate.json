@@ -40,6 +40,13 @@
           "description": "Human-readable name.",
           "type": "string"
         },
+        "preconditions": {
+          "description": "Preconditions must evaluate true before actions are applied.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
+          }
+        },
         "actions": {
           "description": "Actions are applied in order.\nIf any action fails, all are retried.",
           "type": "array",
@@ -58,156 +65,9 @@
       "required": [
         "actions",
         "id",
+        "preconditions",
         "title",
         "transitions"
-      ]
-    },
-    "AutomationAction<ActionImpl>": {
-      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "impl": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BlockPatchImpl"
-            },
-            {
-              "$ref": "#/definitions/TaskCreateImpl"
-            }
-          ]
-        }
-      },
-      "required": [
-        "enabled",
-        "id",
-        "impl",
-        "title"
-      ]
-    },
-    "BlockPatchImpl": {
-      "description": "Update block.data with given object.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "BlockPatch"
-          ]
-        },
-        "serviceId": {
-          "description": "Part of the unique identifier for a block.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "blockId": {
-          "description": "Part of the unique identifier for a block.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "blockType": {
-          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "data": {
-          "anyOf": [
-            {
-              "description": "Data to be merged into the existing block.data object.",
-              "type": "object",
-              "properties": {},
-              "additionalProperties": true
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": [
-        "blockId",
-        "blockType",
-        "data",
-        "serviceId",
-        "type"
-      ]
-    },
-    "TaskCreateImpl": {
-      "description": "Create a new Task.\nStatus can be checked later with the TaskStatusImpl condition.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "TaskCreate"
-          ]
-        },
-        "ref": {
-          "description": "User-defined reference key.\nNot guaranteed to be unique.",
-          "type": "string"
-        },
-        "title": {
-          "description": "Human readable title for the created task.",
-          "type": "string"
-        },
-        "message": {
-          "description": "Message for the created task.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "message",
-        "ref",
-        "title",
-        "type"
-      ]
-    },
-    "AutomationTransition": {
-      "description": "Object defining how a process can move from one step to another.\nCombining transitions allows for branching and while() behavior.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "pattern": "^[0-9a-fA-F\\-]{36}$",
-          "type": "string"
-        },
-        "next": {
-          "description": "true: next step\nfalse: exit process\nstring: step ID",
-          "type": [
-            "string",
-            "boolean"
-          ]
-        },
-        "enabled": {
-          "description": "A transition must be enabled for it to be evaluated.",
-          "type": "boolean"
-        },
-        "conditions": {
-          "description": "All conditions in a transition must evaluate true.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
-          }
-        }
-      },
-      "required": [
-        "conditions",
-        "enabled",
-        "id",
-        "next"
       ]
     },
     "AutomationCondition<ConditionImpl>": {
@@ -423,6 +283,154 @@
       "required": [
         "desc",
         "type"
+      ]
+    },
+    "AutomationAction<ActionImpl>": {
+      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "impl": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BlockPatchImpl"
+            },
+            {
+              "$ref": "#/definitions/TaskCreateImpl"
+            }
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "id",
+        "impl",
+        "title"
+      ]
+    },
+    "BlockPatchImpl": {
+      "description": "Update block.data with given object.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "BlockPatch"
+          ]
+        },
+        "serviceId": {
+          "description": "Part of the unique identifier for a block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockId": {
+          "description": "Part of the unique identifier for a block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "blockType": {
+          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data": {
+          "anyOf": [
+            {
+              "description": "Data to be merged into the existing block.data object.",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "blockId",
+        "blockType",
+        "data",
+        "serviceId",
+        "type"
+      ]
+    },
+    "TaskCreateImpl": {
+      "description": "Create a new Task.\nStatus can be checked later with the TaskStatusImpl condition.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "TaskCreate"
+          ]
+        },
+        "ref": {
+          "description": "User-defined reference key.\nNot guaranteed to be unique.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Human readable title for the created task.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Message for the created task.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "ref",
+        "title",
+        "type"
+      ]
+    },
+    "AutomationTransition": {
+      "description": "Object defining how a process can move from one step to another.\nCombining transitions allows for branching and while() behavior.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "pattern": "^[0-9a-fA-F\\-]{36}$",
+          "type": "string"
+        },
+        "next": {
+          "description": "true: next step\nfalse: exit process\nstring: step ID",
+          "type": [
+            "string",
+            "boolean"
+          ]
+        },
+        "enabled": {
+          "description": "A transition must be enabled for it to be evaluated.",
+          "type": "boolean"
+        },
+        "conditions": {
+          "description": "All conditions in a transition must evaluate true.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
+          }
+        }
+      },
+      "required": [
+        "conditions",
+        "enabled",
+        "id",
+        "next"
       ]
     }
   },

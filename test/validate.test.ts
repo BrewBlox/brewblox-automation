@@ -30,6 +30,16 @@ describe('object validation', () => {
       steps: [{
         id: stepId,
         title: 'Step One',
+        preconditions: [{
+          id: uid(),
+          title: 'Precondition one',
+          enabled: true,
+          impl: {
+            type: 'TaskStatus',
+            ref: 'precondition-task',
+            status: 'Finished',
+          },
+        }],
         actions: [{
           id: uid(),
           title: 'Action one',
