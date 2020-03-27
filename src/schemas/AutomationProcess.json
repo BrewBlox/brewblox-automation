@@ -59,12 +59,16 @@
           ]
         },
         "stepStatus": {
-          "$ref": "#/definitions/AutomationStatus",
+          "$ref": "#/definitions/AutomationStepStatus",
           "description": "Current status for the relevant step.\nWill be Invalid if stepId is null."
         },
         "processStatus": {
           "$ref": "#/definitions/AutomationStatus",
           "description": "Current status for the entire process.\nThe process will only be evaluated if it is Active."
+        },
+        "error": {
+          "description": "Relevant error message.",
+          "type": "string"
         }
       },
       "required": [
@@ -74,6 +78,18 @@
         "stepId",
         "stepStatus"
       ]
+    },
+    "AutomationStepStatus": {
+      "enum": [
+        "Actions",
+        "Cancelled",
+        "Created",
+        "Finished",
+        "Invalid",
+        "Preconditions",
+        "Transitions"
+      ],
+      "type": "string"
     },
     "AutomationStatus": {
       "description": "Generic status type for Automation types.\nIt is used by multiple types.",

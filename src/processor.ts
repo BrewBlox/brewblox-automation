@@ -6,13 +6,15 @@ import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { actionHandlers, conditionHandlers } from './handlers';
 import logger from './logger';
-import { AutomationCondition, UUID } from './shared-types';
 import {
+  AutomationCondition,
   AutomationProcess,
   AutomationStep,
+  AutomationStepJump,
   AutomationStepResult,
   AutomationTransition,
   HandlerOpts,
+  UUID,
 } from './types';
 
 type UpdateResult = AutomationStepResult | null;
@@ -44,6 +46,25 @@ const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): Automati
   };
 };
 
+/**
+ *
+ * @param opts
+ * @param conditions
+ */
+const errorResult = (activeResult: AutomationStepResult, error: string): AutomationStepResult => {
+  const { stepId, stepStatus, processStatus } = activeResult;
+  return activeResult.error === undefined
+    ? createResult({ stepId, stepStatus, processStatus, error })
+    : activeResult;
+};
+
+/**
+ * Check all enabled conditions.
+ * Return true if all conditions evaluate true.
+ *
+ * @param opts Handler opts containing process and computed values.
+ * @param conditions List of checked conditions.
+ */
 const evaluateConditions = async (opts: HandlerOpts, conditions: AutomationCondition[]): Promise<boolean> => {
   for (const condition of conditions.filter(v => v.enabled)) {
     const handler = conditionHandlers[condition.impl.type];
@@ -160,7 +181,7 @@ const advance = (opts: HandlerOpts, transition: AutomationTransition): Automatio
  *
  * @param opts Handler opts containing process and computed values.
  */
-const initialResult: UpdateFunc = async ({ proc, activeResult }) => {
+const initialProcessResult: UpdateFunc = async ({ proc, activeResult }) => {
   if (activeResult) {
     return null;
   }
@@ -191,39 +212,60 @@ const earlyExit: UpdateFunc = async ({ activeResult }) => {
 };
 
 /**
- * Evaluate preconditions if step is Created.
- * If step already progressed to Active / Retrying, preconditions are not re-evaluated.
+ * Create a more specific Result if the active status is 'Created'.
+ *
+ * @param opts Handler opts containing process and computed values.
+ */
+const initialStepResult: UpdateFunc = async ({ activeResult }) => {
+  if (activeResult.stepStatus !== 'Created') {
+    return null;
+  }
+
+  return createResult({
+    stepId: activeResult.stepId,
+    stepStatus: 'Preconditions',
+    processStatus: 'Active',
+  });
+};
+
+/**
+ * Evaluate preconditions if status is 'Preconditions'.
+ * If all preconditions evaluate true, return a Result with status 'Actions'.
  *
  * @param opts Handler opts containing process and computed values.
  */
 const checkPreconditions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
-  if (activeResult.stepStatus !== 'Created') {
+
+  if (activeResult.stepStatus !== 'Preconditions') {
     return null;
   }
+
   try {
     return await evaluateConditions(opts, activeStep.preconditions)
-      ? null
+      ? createResult({
+        stepId: activeStep.id,
+        stepStatus: 'Actions',
+        processStatus: 'Active',
+      })
       : activeResult;
   }
   catch (e) {
     logger.error(`${activeStep.id}::${activeStep.title} precondition error: ${e.message}`);
-    return activeResult;
+    return errorResult(activeResult, e.message);
   }
 };
 
 /**
- * Apply step actions if it hasn't been done yet.
- * If any action handler throws an error, return a Result with status 'Retrying'.
- * Return activeResult for subsequent fails.
- *
- * After applying actions, return a Result with status 'Active'.
+ * Apply step actions if status is 'Actions'.
+ * After applying actions, return a Result with status 'Transitions'.
  *
  * @param opts Handler opts containing process and computed values.
  */
 const applyActions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
-  if (activeResult.stepStatus === 'Active') {
+
+  if (activeResult.stepStatus !== 'Actions') {
     return null;
   }
 
@@ -234,34 +276,29 @@ const applyActions: UpdateFunc = async (opts) => {
     }
     return createResult({
       stepId: activeStep.id,
-      stepStatus: 'Active',
+      stepStatus: 'Transitions',
       processStatus: 'Active',
     });
   }
   catch (e) {
-    if (activeResult.stepStatus === 'Retrying') {
-      return activeResult;
-    }
-    else {
-      logger.error(`${activeStep.id}::${activeStep.title} apply error: ${e.message}`);
-      return createResult({
-        stepId: activeStep.id,
-        stepStatus: 'Retrying',
-        processStatus: 'Active',
-      });
-    }
+    logger.error(`${activeStep.id}::${activeStep.title} apply error: ${e.message}`);
+    return errorResult(activeResult, e.message);
   }
 };
 
 /**
  * Evaluate all step transitions.
  * If a transition evaluates true,
- * return a Result with status Created, and the new step ID
+ * return a Result with status 'Created', and the new step ID
  *
  * @param opts Handler opts containing process and computed values.
  */
 const checkTransitions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
+
+  if (activeResult.stepStatus !== 'Transitions') {
+    return null;
+  }
 
   // Immediately go to next step if there aren't any transitions
   if (!activeStep.transitions.find(v => v.enabled)) {
@@ -276,7 +313,7 @@ const checkTransitions: UpdateFunc = async (opts) => {
   }
   catch (e) {
     logger.error(`${activeStep.id}::${activeStep.title} evaluate error: ${e.message}`);
-    return activeResult;
+    return errorResult(activeResult, e.message);
   }
 };
 
@@ -294,8 +331,9 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
     activeResult: currentResult(proc),
   };
   const result = null
-    ?? await initialResult(opts)
+    ?? await initialProcessResult(opts)
     ?? await earlyExit(opts)
+    ?? await initialStepResult(opts)
     ?? await checkPreconditions(opts)
     ?? await applyActions(opts)
     ?? await checkTransitions(opts);
@@ -312,6 +350,24 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
 }
 
 /**
+ * Apply a jump Result to a process.
+ * Status is 'Created' unless explicitly set by caller.
+ *
+ * @param proc The evaluated process.
+ * @param jump The external jump instruction.
+ * @returns the updated process if the process was changed.
+ */
+export async function applyStepJump(proc: AutomationProcess, jump: AutomationStepJump): Promise<AutomationProcess> {
+  const result = createResult({
+    stepId: jump.stepId,
+    stepStatus: jump.stepStatus ?? 'Created',
+    processStatus: 'Active',
+  });
+  proc.results.push(result);
+  return proc;
+}
+
+/**
  * Update a single process.
  * Will apply actions and check transitions.
  *
@@ -320,6 +376,8 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
  */
 export async function updateProcess(proc: AutomationProcess): Promise<AutomationProcess | null> {
   let changed = false;
+
+  // Call nextUpdateResult() until it stops yielding updates
   while (true) {
     const result = await nextUpdateResult(proc);
     if (!result) {
@@ -331,6 +389,7 @@ export async function updateProcess(proc: AutomationProcess): Promise<Automation
 }
 
 export class Processor {
+  private pending: AutomationStepJump[] = [];
 
   public start(): void {
     logger.info('Started processor');
@@ -338,14 +397,24 @@ export class Processor {
   }
 
   public async update(): Promise<void> {
-    try {
-      for (const proc of await processDb.fetchAll()) {
-        const updated = await updateProcess(proc);
-        if (updated) {
-          await processDb.save(updated);
-        }
-      }
+    const pendingNow = [...this.pending];
+    this.pending = [];
 
+    while (pendingNow.length) {
+      const jump = pendingNow.shift();
+      try {
+        const proc = await processDb.fetchById(jump.processId);
+        await processDb.save(await applyStepJump(proc, jump));
+      }
+      catch (e) {
+        logger.error(`Processor jump error: ${e.message}`);
+        // Push all unhandled jumps back on the pending list
+        this.pending.splice(0, 0, jump, ...pendingNow);
+        return;
+      }
+    }
+
+    try {
       const processes = await processDb.fetchAll();
       const tasks = await taskDb.fetchAll();
 
@@ -357,8 +426,12 @@ export class Processor {
       });
     }
     catch (e) {
-      logger.error(`Processor error: ${e.message}`);
+      logger.error(`Processor update error: ${e.message}`);
     }
+  }
+
+  public scheduleStepJump(change: AutomationStepJump): void {
+    this.pending.push(change);
   }
 }
 

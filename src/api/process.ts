@@ -1,12 +1,26 @@
 import { Middleware } from 'koa';
 import Router from 'koa-router';
+import isString from 'lodash/isString';
+import { v4 as uid } from 'uuid';
 
 import { processDb } from '../database';
 import logger from '../logger';
-import { lastErrors, validateProcess } from '../validation';
+import { processor } from '../processor';
+import { AutomationProcess, AutomationStepJump, AutomationTemplate, AutomationTransition, UUID } from '../shared-types';
+import { lastErrors, validateJump, validateTemplate } from '../validation';
 
-const validate: Middleware = async (ctx, next) => {
-  if (!validateProcess(ctx.request.body)) {
+const validateTemplateBody: Middleware = async (ctx, next) => {
+  if (!validateTemplate(ctx.request.body)) {
+    const message = lastErrors().map(e => e.message).join(', ');
+    logger.error(message);
+    logger.debug('%o', ctx.request.body);
+    ctx.throw(422, message);
+  }
+  await next();
+};
+
+const validateJumpBody: Middleware = async (ctx, next) => {
+  if (!validateJump(ctx.request.body)) {
     const message = lastErrors().map(e => e.message).join(', ');
     logger.error(message);
     logger.debug('%o', ctx.request.body);
@@ -17,25 +31,86 @@ const validate: Middleware = async (ctx, next) => {
 
 const router = new Router();
 
+const replaceId = <T extends { id: UUID }>(obj: T): T => ({ ...obj, id: uid() });
+
+export const createProcess: Middleware = async (ctx, next) => {
+  const template: AutomationTemplate = ctx.request.body;
+
+  // Record<oldId, newId>
+  const stepIds: Record<UUID, UUID> = {};
+  template.steps.forEach(step => stepIds[step.id] = uid());
+
+  const verifyTransitionNext = (trans: AutomationTransition): AutomationTransition => {
+    if (!isString(trans.next)) {
+      return trans;
+    }
+    const next = stepIds[trans.next];
+    if (next === undefined) {
+      throw new Error(`Transition target '${trans.next}' doesn't exist`);
+    }
+    return { ...trans, next };
+  };
+
+  try {
+    const proc: AutomationProcess = {
+      ...template,
+      id: uid(),
+      steps: template.steps
+        .map(step => ({
+          ...step,
+          id: stepIds[step.id],
+          preconditions: step.preconditions.map(replaceId),
+          actions: step.actions.map(replaceId),
+          transitions: step.transitions
+            .map(verifyTransitionNext)
+            .map(replaceId)
+            .map(trans => ({
+              ...trans,
+              conditions: trans.conditions.map(replaceId),
+            })),
+        })),
+      results: [],
+    };
+    ctx.request.body = proc;
+  }
+  catch (e) {
+    logger.error(e.message);
+    logger.debug('%o', ctx.request.body);
+    ctx.throw(422, e);
+  }
+  await next();
+};
+
 router.get('/all', async (ctx) => {
   ctx.body = await processDb.fetchAll();
-});
-
-router.post('/create', validate, async (ctx) => {
-  ctx.body = await processDb.create(ctx.request.body);
-  ctx.status = 201;
 });
 
 router.get('/read/:id', async (ctx) => {
   ctx.body = await processDb.fetchById(ctx.params.id);
 });
 
-router.post('/update', validate, async (ctx) => {
-  ctx.body = await processDb.save(ctx.request.body);
+router.post('/init', validateTemplateBody, createProcess, async (ctx) => {
+  ctx.body = await processDb.create(ctx.request.body);
+  ctx.status = 201;
 });
 
-router.post('/delete', validate, async (ctx) => {
-  ctx.body = await processDb.remove(ctx.request.body);
+router.post('/jump', validateJumpBody, async (ctx) => {
+  const jump: AutomationStepJump = ctx.request.body;
+  const proc = await processDb.fetchById(jump.processId);
+  if (!proc?.steps.find(step => step.id === jump.stepId)) {
+    ctx.throw(422, 'Invalid process ID or step ID');
+  }
+  processor.scheduleStepJump(jump);
+  ctx.body = proc;
+});
+
+router.post('/delete/:id', async (ctx) => {
+  const all = await processDb.fetchAll();
+  const proc = all.find(v => v.id === ctx.params.id);
+  if (proc) {
+    await processDb.remove(proc);
+  }
+  ctx.status = 200;
 });
 
 export default router;
