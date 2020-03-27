@@ -48,14 +48,19 @@ const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): Automati
 
 /**
  *
- * @param opts
- * @param conditions
+ * @param opts Handler opts containing process and computed values.
+ * @param error Error message
  */
-const errorResult = (activeResult: AutomationStepResult, error: string): AutomationStepResult => {
+const errorResult = (opts: HandlerOpts, error: string): AutomationStepResult => {
+  const { activeResult, activeStep } = opts;
   const { stepId, stepStatus, processStatus } = activeResult;
-  return activeResult.error === undefined
-    ? createResult({ stepId, stepStatus, processStatus, error })
-    : activeResult;
+
+  if (activeResult.error !== undefined) {
+    return activeResult;
+  }
+
+  logger.error(`${activeStep.id}::${activeStep.title} precondition error: ${error}`);
+  return createResult({ stepId, stepStatus, processStatus, error });
 };
 
 /**
@@ -251,8 +256,7 @@ const checkPreconditions: UpdateFunc = async (opts) => {
       : activeResult;
   }
   catch (e) {
-    logger.error(`${activeStep.id}::${activeStep.title} precondition error: ${e.message}`);
-    return errorResult(activeResult, e.message);
+    return errorResult(opts, e.message);
   }
 };
 
@@ -281,8 +285,7 @@ const applyActions: UpdateFunc = async (opts) => {
     });
   }
   catch (e) {
-    logger.error(`${activeStep.id}::${activeStep.title} apply error: ${e.message}`);
-    return errorResult(activeResult, e.message);
+    return errorResult(opts, e.message);
   }
 };
 
@@ -312,8 +315,7 @@ const checkTransitions: UpdateFunc = async (opts) => {
       : null;
   }
   catch (e) {
-    logger.error(`${activeStep.id}::${activeStep.title} evaluate error: ${e.message}`);
-    return errorResult(activeResult, e.message);
+    return errorResult(opts, e.message);
   }
 };
 
