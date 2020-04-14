@@ -8,7 +8,7 @@ import { ConditionHandler } from './types';
  * If current step is used, the start time is the moment action application was done.
  */
 const handler: ConditionHandler<TimeElapsedImpl> = {
-  async check({ impl }, { proc, activeStep }) {
+  async check({ impl }, { proc, activeStep, activeResult }) {
     if (impl.duration <= 0) {
       return true;
     }
@@ -20,9 +20,9 @@ const handler: ConditionHandler<TimeElapsedImpl> = {
       for (let i = proc.results.length - 1; i >= 0; --i) {
         const result = proc.results[i];
         if (result.stepId === activeStep.id && result.stepStatus === 'Created') {
-          // We start counting from the moment actions were applied
+          // We start counting from the moment the step entered the current status
           const startResult = proc.results.slice(i)
-            .find(v => v.stepId === activeStep.id && v.stepStatus === 'Active');
+            .find(v => v.stepId === activeStep.id && v.stepStatus === activeResult.stepStatus);
           return startResult !== undefined
             ? startResult.date + impl.duration < new Date().getTime()
             : false;
