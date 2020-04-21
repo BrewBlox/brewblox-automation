@@ -1,3 +1,4 @@
+import CORS from '@koa/cors';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import koaLogger from 'koa-logger';
@@ -13,6 +14,7 @@ const router = new Router({ prefix: `/${args.name}` });
 router.use('/task', taskApi.routes(), taskApi.allowedMethods());
 router.use('/process', processApi.routes(), processApi.allowedMethods());
 
+app.use(CORS());
 app.use(koaLogger());
 app.use(koaBody());
 app.use(router.routes());

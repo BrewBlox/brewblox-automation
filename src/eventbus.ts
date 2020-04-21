@@ -15,7 +15,7 @@ export class EventbusClient {
   private cache: Record<string, CachedMessage> = {};
 
   public getCached(key: string, type: string): any | null {
-    const msg = this.cache[`${type}__${key}`];
+    const msg = this.cache[`${key}__${type}`];
     if (msg === undefined) {
       return null;
     }

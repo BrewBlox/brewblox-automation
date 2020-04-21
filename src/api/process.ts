@@ -11,7 +11,7 @@ import { lastErrors, validateJump, validateTemplate } from '../validation';
 
 const validateTemplateBody: Middleware = async (ctx, next) => {
   if (!validateTemplate(ctx.request.body)) {
-    const message = lastErrors().map(e => e.message).join(', ');
+    const message = lastErrors().map(e => `${e.dataPath} => ${e.message}`).join('\n');
     logger.error(message);
     logger.debug('%o', ctx.request.body);
     ctx.throw(422, message);
@@ -21,7 +21,7 @@ const validateTemplateBody: Middleware = async (ctx, next) => {
 
 const validateJumpBody: Middleware = async (ctx, next) => {
   if (!validateJump(ctx.request.body)) {
-    const message = lastErrors().map(e => e.message).join(', ');
+    const message = lastErrors().map(e => `${e.dataPath} => ${e.message}`).join('\n');
     logger.error(message);
     logger.debug('%o', ctx.request.body);
     ctx.throw(422, message);

@@ -67,7 +67,7 @@
           "description": "Current status for the entire process.\nThe process will only be evaluated if it is Active."
         },
         "error": {
-          "description": "Relevant error message.",
+          "description": "Optional error message.",
           "type": "string"
         }
       },

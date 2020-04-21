@@ -59,7 +59,7 @@ const errorResult = (opts: HandlerOpts, error: string): AutomationStepResult => 
     return activeResult;
   }
 
-  logger.error(`${activeStep.id}::${activeStep.title} precondition error: ${error}`);
+  logger.error(`${activeStep.id}::${activeStep.title} ${stepStatus} error: ${error}`);
   return createResult({ stepId, stepStatus, processStatus, error });
 };
 
@@ -346,7 +346,7 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
    *
    * If this happens, return null instead of the duplicate.
    */
-  return result.id !== opts.activeResult?.id
+  return result && result.id !== opts.activeResult?.id
     ? result
     : null;
 }
@@ -417,6 +417,13 @@ export class Processor {
     }
 
     try {
+      for (const proc of await processDb.fetchAll()) {
+        const updated = await updateProcess(proc);
+        if (updated) {
+          await processDb.save(updated);
+        }
+      }
+
       const processes = await processDb.fetchAll();
       const tasks = await taskDb.fetchAll();
 
