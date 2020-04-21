@@ -3,16 +3,14 @@ import { v4 as uid } from 'uuid';
 
 import app from '../src/app';
 import { database, processDb } from '../src/database';
-import { AutomationProcess } from '../src/types';
+import { AutomationProcess, AutomationStepJump, AutomationTemplate } from '../src/types';
 
 describe('/automation/process/', () => {
-  const procId = uid();
-  const stepId = uid();
-  const proc: AutomationProcess = {
-    id: procId,
+  const template: AutomationTemplate = {
+    id: uid(),
     title: 'Test Process',
     steps: [{
-      id: stepId,
+      id: uid(),
       title: 'Step One',
       preconditions: [{
         id: uid(),
@@ -62,13 +60,6 @@ describe('/automation/process/', () => {
         ],
       }],
     }],
-    results: [{
-      id: uid(),
-      stepId: stepId,
-      date: new Date().getTime(),
-      stepStatus: 'Created',
-      processStatus: 'Active',
-    }],
   };
   const server = request(app.callback());
 
@@ -85,13 +76,15 @@ describe('/automation/process/', () => {
     expect(database.local).toBe(true);
   });
 
-  it('should create process', async () => {
+  it('should initialize a process', async () => {
     let res = await server
-      .post('/automation/process/create')
-      .send(proc);
+      .post('/automation/process/init')
+      .send(template);
 
-    expect(res.body).toMatchObject(proc);
+    const proc: AutomationProcess = res.body;
+    expect(proc.id !== template.id).toBeTruthy();
     expect(res.status).toEqual(201);
+
 
     res = await server
       .get('/automation/process/all');
@@ -103,6 +96,55 @@ describe('/automation/process/', () => {
       .get(`/automation/process/read/${proc.id}`);
 
     expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject(proc);
+  });
+
+  it('should validate transition targets', async () => {
+    const copy = JSON.parse(JSON.stringify(template));
+    copy.steps[0].transitions[0].next = uid();
+
+    const res = await server
+      .post('/automation/process/init')
+      .send(copy);
+
+    expect(res.status).toEqual(422);
+    expect(res.text).toMatch('Transition target');
+  });
+
+  it('should remove a process', async () => {
+    let res = await server
+      .post('/automation/process/init')
+      .send(template);
+
+    expect(res.status).toBe(201);
+    const proc: AutomationProcess = res.body;
+
+    res = await server
+      .post(`/automation/process/delete/${proc.id}`);
+    expect(res.status).toBe(200);
+
+    res = await server
+      .post(`/automation/process/delete/${proc.id}`);
+    expect(res.status).toBe(200);
+  });
+
+  it('should jump to a process step', async () => {
+    let res = await server
+      .post('/automation/process/init')
+      .send(template);
+
+    expect(res.status).toBe(201);
+    const proc: AutomationProcess = res.body;
+    const jump: AutomationStepJump = {
+      processId: proc.id,
+      stepId: proc.steps[0].id,
+    };
+
+    res = await server
+      .post('/automation/process/jump')
+      .send(jump);
+
+    expect(res.status).toBe(200);
     expect(res.body).toMatchObject(proc);
   });
 });

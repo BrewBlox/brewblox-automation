@@ -10,9 +10,10 @@ const settings: PartialArgs = {
 const program = getProgramFromFiles([resolve('./src/types.d.ts')]);
 
 const types = [
+  'AutomationProcess',
+  'AutomationStepJump',
   'AutomationTask',
   'AutomationTemplate',
-  'AutomationProcess',
   'EventbusMessage',
 ];
 

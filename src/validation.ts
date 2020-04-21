@@ -2,6 +2,7 @@ import Ajv from 'ajv';
 
 // Run "npm run schemas" to generate these
 import AutomationProcess from './schemas/AutomationProcess.json';
+import AutomationStepJump from './schemas/AutomationStepJump.json';
 import AutomationTask from './schemas/AutomationTask.json';
 import AutomationTemplate from './schemas/AutomationTemplate.json';
 import EventbusMessage from './schemas/EventbusMessage.json';
@@ -20,5 +21,8 @@ export const validateProcess = (data: types.AutomationProcess) =>
 
 export const validateMessage = (data: types.EventbusMessage) =>
   ajv.validate(EventbusMessage, data);
+
+export const validateJump = (data: types.AutomationStepJump) =>
+  ajv.validate(AutomationStepJump, data);
 
 export const lastErrors = () => ajv.errors ?? [];
