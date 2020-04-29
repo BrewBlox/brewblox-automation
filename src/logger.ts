@@ -1,7 +1,9 @@
 import { createLogger, format, transports } from 'winston';
 
+import args from './args';
+
 export default createLogger({
-  level: 'info',
+  level: args.debug ? 'debug' : 'info',
   format: format.combine(
     format.splat(),
     format.json(),

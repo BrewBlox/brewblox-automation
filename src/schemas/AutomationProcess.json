@@ -58,11 +58,11 @@
             "null"
           ]
         },
-        "stepStatus": {
-          "$ref": "#/definitions/AutomationStepStatus",
+        "phase": {
+          "$ref": "#/definitions/AutomationStepPhase",
           "description": "Current status for the relevant step.\nWill be Invalid if stepId is null."
         },
-        "processStatus": {
+        "status": {
           "$ref": "#/definitions/AutomationStatus",
           "description": "Current status for the entire process.\nThe process will only be evaluated if it is Active."
         },
@@ -74,12 +74,12 @@
       "required": [
         "date",
         "id",
-        "processStatus",
-        "stepId",
-        "stepStatus"
+        "phase",
+        "status",
+        "stepId"
       ]
     },
-    "AutomationStepStatus": {
+    "AutomationStepPhase": {
       "enum": [
         "Actions",
         "Cancelled",
@@ -277,8 +277,7 @@
           ]
         },
         "value": {
-          "description": "Compared value.",
-          "type": "null"
+          "description": "Compared value."
         },
         "operator": {
           "description": "Comparison approach.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",

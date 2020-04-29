@@ -21,7 +21,7 @@ const compare: Record<BlockValueImpl['operator'], ((v1: any, v2: any) => boolean
  * If the block can't be found, it will evaluate false.
  */
 const handler: ConditionHandler<BlockValueImpl> = {
-  async check({ impl }) {
+  async check({ impl, title }) {
 
     // intentional loose compare
     if (impl.serviceId == null || impl.blockId == null) {
@@ -32,7 +32,7 @@ const handler: ConditionHandler<BlockValueImpl> = {
       .find(v => v.id === impl.blockId);
 
     if (!block) {
-      return false;
+      throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when checking ${title}`);
     }
 
     let actual = block.data[impl.key];

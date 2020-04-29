@@ -19,16 +19,16 @@ const handler: ConditionHandler<TimeElapsedImpl> = {
     else if (impl.start === 'Step') {
       for (let i = proc.results.length - 1; i >= 0; --i) {
         const result = proc.results[i];
-        if (result.stepId === activeStep.id && result.stepStatus === 'Created') {
-          // We start counting from the moment the step entered the current status
+        if (result.stepId === activeStep.id && result.phase === 'Created') {
+          // We start counting from the moment the step entered the current phase
           const startResult = proc.results.slice(i)
-            .find(v => v.stepId === activeStep.id && v.stepStatus === activeResult.stepStatus);
+            .find(v => v.stepId === activeStep.id && v.phase === activeResult.phase);
           return startResult !== undefined
             ? startResult.date + impl.duration < new Date().getTime()
             : false;
         }
       }
-      throw new Error('No result found for current step with status Created');
+      throw new Error('No result found for current step with phase Created');
     }
     else {
       throw new Error(`Invalid start field in TimeElapsed: ${impl.start}`);

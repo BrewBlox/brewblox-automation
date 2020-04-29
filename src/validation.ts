@@ -26,3 +26,5 @@ export const validateJump = (data: types.AutomationStepJump) =>
   ajv.validate(AutomationStepJump, data);
 
 export const lastErrors = () => ajv.errors ?? [];
+
+export const errorText = () => ajv.errorsText();

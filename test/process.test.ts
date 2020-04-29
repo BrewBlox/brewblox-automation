@@ -120,11 +120,11 @@ describe('/automation/process/', () => {
     const proc: AutomationProcess = res.body;
 
     res = await server
-      .post(`/automation/process/delete/${proc.id}`);
+      .delete(`/automation/process/delete/${proc.id}`);
     expect(res.status).toBe(200);
 
     res = await server
-      .post(`/automation/process/delete/${proc.id}`);
+      .delete(`/automation/process/delete/${proc.id}`);
     expect(res.status).toBe(200);
   });
 

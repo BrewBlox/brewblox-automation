@@ -4,7 +4,7 @@ import parseDuration from 'parse-duration';
 import { blockEventType } from './getters';
 import logger from './logger';
 import { Block, CachedMessage, EventbusMessage } from './types';
-import { lastErrors, validateMessage } from './validation';
+import { errorText, validateMessage } from './validation';
 
 const statusExchange = 'brewcast.state';
 const publishKey = 'automation.output';
@@ -69,7 +69,7 @@ export class EventbusClient {
     const message: EventbusMessage = JSON.parse(msg.content.toString());
     if (!validateMessage(message)) {
       logger.warn(`Discarded eventbus message from '${message.key}'`);
-      logger.warn(lastErrors());
+      logger.warn(errorText());
       return;
     }
 

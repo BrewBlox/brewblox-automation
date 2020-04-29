@@ -201,8 +201,7 @@
           ]
         },
         "value": {
-          "description": "Compared value.",
-          "type": "null"
+          "description": "Compared value."
         },
         "operator": {
           "description": "Comparison approach.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",

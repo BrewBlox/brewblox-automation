@@ -1,4 +1,5 @@
 import isString from 'lodash/isString';
+import takeRight from 'lodash/takeRight';
 import { v4 as uid } from 'uuid';
 
 import args from './args';
@@ -20,6 +21,9 @@ import {
 type UpdateResult = AutomationStepResult | null;
 
 type UpdateFunc = (opts: HandlerOpts) => Promise<UpdateResult>;
+
+
+const MAX_RESULTS = 100;
 
 
 const currentResult = (proc: AutomationProcess): AutomationStepResult => {
@@ -53,14 +57,14 @@ const createResult = (opts: Omit<AutomationStepResult, 'id' | 'date'>): Automati
  */
 const errorResult = (opts: HandlerOpts, error: string): AutomationStepResult => {
   const { activeResult, activeStep } = opts;
-  const { stepId, stepStatus, processStatus } = activeResult;
+  const { stepId, phase, status } = activeResult;
 
   if (activeResult.error !== undefined) {
     return activeResult;
   }
 
-  logger.error(`${activeStep.id}::${activeStep.title} ${stepStatus} error: ${error}`);
-  return createResult({ stepId, stepStatus, processStatus, error });
+  logger.error(`${activeStep.id}::${activeStep.title} ${phase} error: ${error}`);
+  return createResult({ stepId, phase, status, error });
 };
 
 /**
@@ -103,8 +107,8 @@ const findValidTransition = async (opts: HandlerOpts): Promise<AutomationTransit
 const advanceToEnd = (opts: HandlerOpts): AutomationStepResult => {
   return createResult({
     stepId: opts.activeResult.stepId,
-    stepStatus: 'Finished',
-    processStatus: 'Finished',
+    phase: 'Finished',
+    status: 'Finished',
   });
 };
 
@@ -122,8 +126,8 @@ const advanceToNext = (opts: HandlerOpts): AutomationStepResult => {
   return nextStep
     ? createResult({
       stepId: nextStep.id,
-      stepStatus: 'Created',
-      processStatus: 'Active',
+      phase: 'Created',
+      status: 'Active',
     })
     : advanceToEnd(opts);
 };
@@ -140,13 +144,13 @@ const advanceToId = (opts: HandlerOpts, stepId: UUID): AutomationStepResult => {
   return nextStep
     ? createResult({
       stepId,
-      stepStatus: 'Created',
-      processStatus: 'Active',
+      phase: 'Created',
+      status: 'Active',
     })
     : createResult({
       stepId: null,
-      stepStatus: 'Invalid',
-      processStatus: 'Invalid',
+      phase: 'Invalid',
+      status: 'Invalid',
     });
 };
 
@@ -171,8 +175,8 @@ const advance = (opts: HandlerOpts, transition: AutomationTransition): Automatio
     // This scenario should be prevented by validating the template
     return createResult({
       stepId: opts.activeStep.id,
-      stepStatus: 'Invalid',
-      processStatus: 'Invalid',
+      phase: 'Invalid',
+      status: 'Invalid',
     });
   }
 };
@@ -193,13 +197,13 @@ const initialProcessResult: UpdateFunc = async ({ proc, activeResult }) => {
   return proc.steps.length > 0
     ? createResult({
       stepId: proc.steps[0].id,
-      stepStatus: 'Created',
-      processStatus: 'Active',
+      phase: 'Created',
+      status: 'Active',
     })
     : createResult({
       stepId: null,
-      stepStatus: 'Invalid',
-      processStatus: 'Finished',
+      phase: 'Invalid',
+      status: 'Finished',
     });
 };
 
@@ -210,7 +214,7 @@ const initialProcessResult: UpdateFunc = async ({ proc, activeResult }) => {
  * @param opts Handler opts containing process and computed values.
  */
 const earlyExit: UpdateFunc = async ({ activeResult }) => {
-  if (activeResult.processStatus !== 'Active') {
+  if (activeResult.status !== 'Active') {
     return activeResult;
   }
   return null;
@@ -222,14 +226,14 @@ const earlyExit: UpdateFunc = async ({ activeResult }) => {
  * @param opts Handler opts containing process and computed values.
  */
 const initialStepResult: UpdateFunc = async ({ activeResult }) => {
-  if (activeResult.stepStatus !== 'Created') {
+  if (activeResult.phase !== 'Created') {
     return null;
   }
 
   return createResult({
     stepId: activeResult.stepId,
-    stepStatus: 'Preconditions',
-    processStatus: 'Active',
+    phase: 'Preconditions',
+    status: 'Active',
   });
 };
 
@@ -242,7 +246,7 @@ const initialStepResult: UpdateFunc = async ({ activeResult }) => {
 const checkPreconditions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
 
-  if (activeResult.stepStatus !== 'Preconditions') {
+  if (activeResult.phase !== 'Preconditions') {
     return null;
   }
 
@@ -250,8 +254,8 @@ const checkPreconditions: UpdateFunc = async (opts) => {
     return await evaluateConditions(opts, activeStep.preconditions)
       ? createResult({
         stepId: activeStep.id,
-        stepStatus: 'Actions',
-        processStatus: 'Active',
+        phase: 'Actions',
+        status: 'Active',
       })
       : activeResult;
   }
@@ -261,15 +265,15 @@ const checkPreconditions: UpdateFunc = async (opts) => {
 };
 
 /**
- * Apply step actions if status is 'Actions'.
- * After applying actions, return a Result with status 'Transitions'.
+ * Apply step actions if phase is 'Actions'.
+ * After applying actions, return a Result with phase 'Transitions'.
  *
  * @param opts Handler opts containing process and computed values.
  */
 const applyActions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
 
-  if (activeResult.stepStatus !== 'Actions') {
+  if (activeResult.phase !== 'Actions') {
     return null;
   }
 
@@ -280,8 +284,8 @@ const applyActions: UpdateFunc = async (opts) => {
     }
     return createResult({
       stepId: activeStep.id,
-      stepStatus: 'Transitions',
-      processStatus: 'Active',
+      phase: 'Transitions',
+      status: 'Active',
     });
   }
   catch (e) {
@@ -292,14 +296,14 @@ const applyActions: UpdateFunc = async (opts) => {
 /**
  * Evaluate all step transitions.
  * If a transition evaluates true,
- * return a Result with status 'Created', and the new step ID
+ * return a Result with phase 'Created', and the new step ID
  *
  * @param opts Handler opts containing process and computed values.
  */
 const checkTransitions: UpdateFunc = async (opts) => {
   const { activeStep, activeResult } = opts;
 
-  if (activeResult.stepStatus !== 'Transitions') {
+  if (activeResult.phase !== 'Transitions') {
     return null;
   }
 
@@ -362,8 +366,8 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
 export async function applyStepJump(proc: AutomationProcess, jump: AutomationStepJump): Promise<AutomationProcess> {
   const result = createResult({
     stepId: jump.stepId,
-    stepStatus: jump.stepStatus ?? 'Created',
-    processStatus: 'Active',
+    phase: jump.phase ?? 'Created',
+    status: 'Active',
   });
   proc.results.push(result);
   return proc;
@@ -420,6 +424,7 @@ export class Processor {
       for (const proc of await processDb.fetchAll()) {
         const updated = await updateProcess(proc);
         if (updated) {
+          updated.results = takeRight(updated.results, MAX_RESULTS);
           await processDb.save(updated);
         }
       }
