@@ -82,8 +82,8 @@ describe('object validation', () => {
         id: uid(),
         stepId: stepId,
         date: new Date().getTime(),
-        stepStatus: 'Created',
-        processStatus: 'Active',
+        phase: 'Created',
+        status: 'Active',
       }],
     };
 

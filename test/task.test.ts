@@ -76,7 +76,7 @@ describe('/automation/task', () => {
     expect(res.body).toMatchObject(task);
 
     const x = await server
-      .post('/automation/task/delete')
+      .delete(`/automation/task/delete/${created.id}`)
       .send(created);
 
     expect(x.status).toBe(200);

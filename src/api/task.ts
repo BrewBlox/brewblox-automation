@@ -3,11 +3,11 @@ import Router from 'koa-router';
 
 import { taskDb } from '../database';
 import logger from '../logger';
-import { lastErrors, validateTask } from '../validation';
+import { errorText, validateTask } from '../validation';
 
 const validate: Middleware = async (ctx, next) => {
   if (!validateTask(ctx.request.body)) {
-    const message = lastErrors().map(e => e.message).join(', ');
+    const message = errorText();
     logger.error(message);
     logger.debug('%o', ctx.request.body);
     ctx.throw(422, message);
@@ -34,8 +34,13 @@ router.post('/update', validate, async (ctx) => {
   ctx.body = await taskDb.save(ctx.request.body);
 });
 
-router.post('/delete', validate, async (ctx) => {
-  ctx.body = await taskDb.remove(ctx.request.body);
+router.delete('/delete/:id', async (ctx) => {
+  const tasks = await taskDb.fetchAll();
+  await Promise.all(
+    tasks
+      .filter(v => v.id === ctx.params.id)
+      .map(v => taskDb.remove(v)));
+  ctx.status = 200;
 });
 
 export default router;
