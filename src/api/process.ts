@@ -3,15 +3,15 @@ import Router from 'koa-router';
 import isString from 'lodash/isString';
 import { v4 as uid } from 'uuid';
 
-import { processDb } from '../database';
+import { processDb, taskDb } from '../database';
 import logger from '../logger';
 import { processor } from '../processor';
 import { AutomationProcess, AutomationStepJump, AutomationTemplate, AutomationTransition, UUID } from '../shared-types';
-import { lastErrors, validateJump, validateTemplate } from '../validation';
+import { errorText, validateJump, validateTemplate } from '../validation';
 
 const validateTemplateBody: Middleware = async (ctx, next) => {
   if (!validateTemplate(ctx.request.body)) {
-    const message = lastErrors().map(e => e.message).join(', ');
+    const message = errorText();
     logger.error(message);
     logger.debug('%o', ctx.request.body);
     ctx.throw(422, message);
@@ -21,7 +21,7 @@ const validateTemplateBody: Middleware = async (ctx, next) => {
 
 const validateJumpBody: Middleware = async (ctx, next) => {
   if (!validateJump(ctx.request.body)) {
-    const message = lastErrors().map(e => e.message).join(', ');
+    const message = errorText();
     logger.error(message);
     logger.debug('%o', ctx.request.body);
     ctx.throw(422, message);
@@ -104,12 +104,17 @@ router.post('/jump', validateJumpBody, async (ctx) => {
   ctx.body = proc;
 });
 
-router.post('/delete/:id', async (ctx) => {
-  const all = await processDb.fetchAll();
-  const proc = all.find(v => v.id === ctx.params.id);
-  if (proc) {
-    await processDb.remove(proc);
-  }
+router.delete('/delete/:id', async (ctx) => {
+  const procs = await processDb.fetchAll();
+  const tasks = await taskDb.fetchAll();
+  await Promise.all(
+    procs
+      .filter(v => v.id === ctx.params.id)
+      .map(v => processDb.remove(v)));
+  await Promise.all(
+    tasks
+      .filter(v => v.processId === ctx.params.id)
+      .map(v => taskDb.remove(v)));
   ctx.status = 200;
 });
 
