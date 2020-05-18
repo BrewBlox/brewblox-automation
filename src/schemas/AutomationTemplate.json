@@ -96,9 +96,6 @@
             },
             {
               "$ref": "#/definitions/TaskStatusImpl"
-            },
-            {
-              "$ref": "#/definitions/AlwaysFalseImpl"
             }
           ]
         }
@@ -264,26 +261,6 @@
       ],
       "type": "string"
     },
-    "AlwaysFalseImpl": {
-      "description": "Enforces a stop in step execution that must be manually overridden.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "AlwaysFalse"
-          ]
-        },
-        "desc": {
-          "description": "Human-readable description.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "desc",
-        "type"
-      ]
-    },
     "AutomationAction<ActionImpl>": {
       "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
       "type": "object",
@@ -304,6 +281,9 @@
             },
             {
               "$ref": "#/definitions/TaskCreateImpl"
+            },
+            {
+              "$ref": "#/definitions/WebhookImpl"
             }
           ]
         }
@@ -397,6 +377,68 @@
         "title",
         "type"
       ]
+    },
+    "WebhookImpl": {
+      "description": "Send a HTTP request to an endpoint",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "Webhook"
+          ]
+        },
+        "url": {
+          "description": "Absolute URL to endpoint. May include params.",
+          "type": "string"
+        },
+        "method": {
+          "$ref": "#/definitions/Method",
+          "description": "HTTP method."
+        },
+        "headers": {
+          "$ref": "#/definitions/Record<string,string>",
+          "description": "HTTP headers."
+        },
+        "body": {
+          "description": "Request body.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "body",
+        "headers",
+        "method",
+        "type",
+        "url"
+      ]
+    },
+    "Method": {
+      "enum": [
+        "DELETE",
+        "GET",
+        "HEAD",
+        "LINK",
+        "OPTIONS",
+        "PATCH",
+        "POST",
+        "PUT",
+        "UNLINK",
+        "delete",
+        "get",
+        "head",
+        "link",
+        "options",
+        "patch",
+        "post",
+        "put",
+        "unlink"
+      ],
+      "type": "string"
+    },
+    "Record<string,string>": {
+      "description": "Construct a type with a set of properties K of type T",
+      "type": "object"
     },
     "AutomationTransition": {
       "description": "Object defining how a process can move from one step to another.\nCombining transitions allows for branching and while() behavior.",
