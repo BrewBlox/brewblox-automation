@@ -8,6 +8,11 @@ import { ConditionHandler } from './types';
  * If current step is used, the start time is the moment action application was done.
  */
 const handler: ConditionHandler<TimeElapsedImpl> = {
+
+  async prepare(opts) {
+    void opts;
+  },
+
   async check({ impl }, { proc, activeStep, activeResult }) {
     if (impl.duration <= 0) {
       return true;

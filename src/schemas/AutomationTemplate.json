@@ -234,8 +234,28 @@
           ]
         },
         "ref": {
-          "description": "The user-defined reference key.\nMust match those set in TaskCreate.\nIf multiple tasks share the same ref key,\nall must match the given status.",
+          "description": "The user-defined reference key.\nMust match those set in TaskEdit.\nIf multiple tasks share the same ref key,\nall must match the given status.",
           "type": "string"
+        },
+        "resetStatus": {
+          "anyOf": [
+            {
+              "description": "Task status to set at the beginning of the step.\nIf null, task is created if not exists, but not modified otherwise.",
+              "enum": [
+                "Active",
+                "Cancelled",
+                "Created",
+                "Finished",
+                "Invalid",
+                "Paused",
+                "Retrying"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "status": {
           "$ref": "#/definitions/AutomationStatus",
@@ -244,6 +264,7 @@
       },
       "required": [
         "ref",
+        "resetStatus",
         "status",
         "type"
       ]
@@ -280,7 +301,7 @@
               "$ref": "#/definitions/BlockPatchImpl"
             },
             {
-              "$ref": "#/definitions/TaskCreateImpl"
+              "$ref": "#/definitions/TaskEditImpl"
             },
             {
               "$ref": "#/definitions/WebhookImpl"
@@ -348,32 +369,59 @@
         "type"
       ]
     },
-    "TaskCreateImpl": {
-      "description": "Create a new Task.\nStatus can be checked later with the TaskStatusImpl condition.",
+    "TaskEditImpl": {
+      "description": "Edit or create a Task.\nStatus can be checked later with the TaskStatusImpl condition.",
       "type": "object",
       "properties": {
         "type": {
           "type": "string",
           "enum": [
-            "TaskCreate"
+            "TaskEdit"
           ]
         },
         "ref": {
-          "description": "User-defined reference key.\nNot guaranteed to be unique.",
+          "description": "User-defined reference key.\nNot guaranteed to be unique.\nAll tasks with this ref are edited.",
           "type": "string"
         },
         "title": {
-          "description": "Human readable title for the created task.",
-          "type": "string"
+          "description": "Human readable title.\nDefault or existing value is used if not set.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "message": {
-          "description": "Message for the created task.",
-          "type": "string"
+          "description": "Human readable message.\nDefault or existing value is used if not set.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "description": "Task status.\nDefault or existing value is used if not set.",
+              "enum": [
+                "Active",
+                "Cancelled",
+                "Created",
+                "Finished",
+                "Invalid",
+                "Paused",
+                "Retrying"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "message",
         "ref",
+        "status",
         "title",
         "type"
       ]

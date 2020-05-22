@@ -1,3 +1,4 @@
+import flatMap from 'lodash/flatMap';
 import isString from 'lodash/isString';
 import takeRight from 'lodash/takeRight';
 import { v4 as uid } from 'uuid';
@@ -5,10 +6,11 @@ import { v4 as uid } from 'uuid';
 import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
-import { actionHandlers, conditionHandlers } from './handlers';
+import { actionHandlers, conditionHandlers, handlers } from './handlers';
 import logger from './logger';
 import {
   AutomationCondition,
+  AutomationItem,
   AutomationProcess,
   AutomationStep,
   AutomationStepJump,
@@ -225,9 +227,27 @@ const earlyExit: UpdateFunc = async ({ activeResult }) => {
  *
  * @param opts Handler opts containing process and computed values.
  */
-const initialStepResult: UpdateFunc = async ({ activeResult }) => {
+const prepareStep: UpdateFunc = async (opts) => {
+  const { activeResult, activeStep } = opts;
   if (activeResult.phase !== 'Created') {
     return null;
+  }
+
+  try {
+    const transitions = activeStep.transitions.filter(v => v.enabled);
+    const items: AutomationItem[] = [
+      ...activeStep.preconditions,
+      ...activeStep.actions,
+      ...flatMap(transitions, t => t.conditions),
+    ]
+      .filter(v => v.enabled);
+
+    for (const item of items) {
+      await handlers[item.impl.type].prepare(item, opts);
+    }
+  }
+  catch (e) {
+    return errorResult(opts, e.message);
   }
 
   return createResult({
@@ -339,7 +359,7 @@ export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateR
   const result = null
     ?? await initialProcessResult(opts)
     ?? await earlyExit(opts)
-    ?? await initialStepResult(opts)
+    ?? await prepareStep(opts)
     ?? await checkPreconditions(opts)
     ?? await applyActions(opts)
     ?? await checkTransitions(opts);

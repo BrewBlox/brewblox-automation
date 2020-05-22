@@ -8,6 +8,11 @@ import { ActionHandler } from './types';
  * Send a HTTP request with defined config.
  */
 const handler: ActionHandler<WebhookImpl> = {
+
+  async prepare(opts) {
+    void opts;
+  },
+
   async apply({ impl }) {
     const { url, method, headers, body } = impl;
     const resp = await axios({
