@@ -443,7 +443,7 @@
           ]
         },
         "ref": {
-          "description": "User-defined reference key.\nNot guaranteed to be unique.",
+          "description": "User-defined reference key.\nNot guaranteed to be unique.\nAll tasks with this ref are edited.",
           "type": "string"
         },
         "title": {

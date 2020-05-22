@@ -38,6 +38,7 @@ describe('object validation', () => {
             type: 'TaskStatus',
             ref: 'precondition-task',
             status: 'Finished',
+            resetStatus: null,
           },
         }],
         actions: [{
@@ -45,10 +46,11 @@ describe('object validation', () => {
           title: 'Action one',
           enabled: true,
           impl: {
-            type: 'TaskCreate',
+            type: 'TaskEdit',
             ref: 'tasky',
             title: 'Created task',
             message: 'Beep boop I am robot',
+            status: 'Active',
           },
         }],
         transitions: [{
