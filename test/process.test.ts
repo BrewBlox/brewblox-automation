@@ -20,6 +20,7 @@ describe('/automation/process/', () => {
           type: 'TaskStatus',
           ref: 'precondition-task',
           status: 'Finished',
+          resetStatus: null,
         },
       }],
       actions: [{
@@ -27,10 +28,11 @@ describe('/automation/process/', () => {
         title: 'Action one',
         enabled: true,
         impl: {
-          type: 'TaskCreate',
+          type: 'TaskEdit',
           ref: 'tasky',
           title: 'Created task',
           message: 'Beep boop I am robot',
+          status: null,
         },
       }],
       transitions: [{

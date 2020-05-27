@@ -10,6 +10,11 @@ const stripPostFix = (key: string) => key.replace(/[\[<].+/, '');
  * Merge existing block data with the given change set.
  */
 const handler: ActionHandler<BlockPatchImpl> = {
+
+  async prepare(opts) {
+    void opts;
+  },
+
   async apply({ impl, title }) {
     if (impl.serviceId == null || impl.blockId == null) {
       return;
