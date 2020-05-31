@@ -1,4 +1,4 @@
-import amqplib, { Channel, Message } from 'amqplib';
+import mqtt from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import { blockEventType } from './getters';
@@ -6,12 +6,10 @@ import logger from './logger';
 import { Block, CachedMessage, EventbusMessage } from './types';
 import { errorText, validateMessage } from './validation';
 
-const statusExchange = 'brewcast.state';
-const publishKey = 'automation.output';
+const stateTopic = 'brewcast/state';
 
 export class EventbusClient {
-  private lastOk = true;
-  private channel: Channel | null = null;
+  private client: mqtt.Client | null = null;
   private cache: Record<string, CachedMessage> = {};
 
   public getCached(key: string, type: string): any | null {
@@ -30,43 +28,22 @@ export class EventbusClient {
   }
 
   public async connect(): Promise<void> {
-    try {
-      const conn = await amqplib.connect('amqp://eventbus:5672');
-      conn.on('close', () => {
-        logger.info('Eventbus closed');
-        this.retry();
-      });
+    const opts: mqtt.IClientOptions = {
+      protocol: 'mqtt',
+      host: 'eventbus',
+      path: '/ws',
+    };
+    this.client = mqtt.connect(undefined, opts);
 
-      this.channel = await conn.createChannel();
-      const queue = await this.channel.assertQueue('', { exclusive: true });
-
-      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
-      await this.channel.bindQueue(queue.queue, statusExchange, '#');
-      await this.channel.consume(queue.queue, msg => this.onMessage(msg));
-
-      this.lastOk = true;
-      logger.info(`Starting eventbus sync: ${statusExchange}`);
-    }
-    catch (e) {
-      if (this.lastOk) {
-        logger.warn(`Failed to connect: ${e.message}`);
-        this.lastOk = false;
-      }
-      this.retry();
-    }
+    this.client.on('error', e => logger.error(`mqtt error: ${e}`));
+    this.client.on('connect', () => this.client.subscribe(stateTopic));
+    this.client.on('message', (_, body) => this.onMessage(JSON.parse(body.toString())));
   }
 
-  private retry(): void {
-    setTimeout(() => this.connect(), 2000);
-  }
-
-  private onMessage(msg: Message): void {
-    this.channel.ack(msg);
-    if (msg.fields.routingKey === publishKey) {
-      // Ignore messages sent by publish()
+  private onMessage(message: EventbusMessage): void {
+    if (message.type.startsWith('automation')) {
       return;
     }
-    const message: EventbusMessage = JSON.parse(msg.content.toString());
     if (!validateMessage(message)) {
       logger.warn(`Discarded eventbus message from '${message.key}'`);
       logger.warn(errorText());
@@ -80,9 +57,8 @@ export class EventbusClient {
   }
 
   public async publish(msg: EventbusMessage): Promise<void> {
-    if (this.channel) {
-      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
-      this.channel.publish(statusExchange, publishKey, Buffer.from(JSON.stringify(msg)));
+    if (this.client) {
+      this.client.publish(stateTopic, JSON.stringify(msg));
     }
   }
 }
