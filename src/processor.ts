@@ -454,7 +454,7 @@ export class Processor {
 
       await eventbus.publish({
         key: args.name,
-        type: 'Automation.active',
+        type: 'automation.active',
         data: { processes, tasks },
         ttl: '60s',
       });
