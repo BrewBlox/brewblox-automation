@@ -6,7 +6,8 @@ import logger from './logger';
 import { Block, CachedMessage, EventbusMessage } from './types';
 import { errorText, validateMessage } from './validation';
 
-const stateTopic = 'brewcast/state';
+const publishTopic = 'brewcast/state/automation';
+const subscribeTopic = 'brewcast/state/#';
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
@@ -36,12 +37,12 @@ export class EventbusClient {
     this.client = mqtt.connect(undefined, opts);
 
     this.client.on('error', e => logger.error(`mqtt error: ${e}`));
-    this.client.on('connect', () => this.client.subscribe(stateTopic));
-    this.client.on('message', (_, body) => this.onMessage(JSON.parse(body.toString())));
+    this.client.on('connect', () => this.client.subscribe(subscribeTopic));
+    this.client.on('message', (topic, body) => this.onMessage(topic, JSON.parse(body.toString())));
   }
 
-  private onMessage(message: EventbusMessage): void {
-    if (message.type.startsWith('automation')) {
+  private onMessage(topic: string, message: EventbusMessage): void {
+    if (topic === publishTopic) {
       return;
     }
     if (!validateMessage(message)) {
@@ -58,7 +59,7 @@ export class EventbusClient {
 
   public async publish(msg: EventbusMessage): Promise<void> {
     if (this.client) {
-      this.client.publish(stateTopic, JSON.stringify(msg));
+      this.client.publish(publishTopic, JSON.stringify(msg));
     }
   }
 }
