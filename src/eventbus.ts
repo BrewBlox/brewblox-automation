@@ -1,13 +1,13 @@
 import mqtt from 'mqtt';
 import parseDuration from 'parse-duration';
 
+import args from './args';
 import { blockEventType } from './getters';
 import logger from './logger';
 import { Block, CachedMessage, EventbusMessage } from './types';
 import { errorText, validateMessage } from './validation';
 
-const publishTopic = 'brewcast/state/automation';
-const subscribeTopic = 'brewcast/state/#';
+const stateTopic = 'brewcast/state';
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
@@ -32,25 +32,23 @@ export class EventbusClient {
     const opts: mqtt.IClientOptions = {
       protocol: 'mqtt',
       host: 'eventbus',
-      path: '/ws',
     };
     this.client = mqtt.connect(undefined, opts);
 
     this.client.on('error', e => logger.error(`mqtt error: ${e}`));
-    this.client.on('connect', () => this.client.subscribe(subscribeTopic));
+    this.client.on('connect', () => this.client.subscribe(stateTopic + '/#'));
     this.client.on('message', (topic, body) => this.onMessage(topic, JSON.parse(body.toString())));
   }
 
   private onMessage(topic: string, message: EventbusMessage): void {
-    if (topic === publishTopic) {
-      return;
-    }
     if (!validateMessage(message)) {
-      logger.warn(`Discarded eventbus message from '${message.key}'`);
+      logger.warn(`Discarded eventbus message from '${topic}'`);
       logger.warn(errorText());
       return;
     }
-
+    if (message.key === args.name) {
+      return;
+    }
     this.cache[`${message.key}__${message.type}`] = {
       ...message,
       received: new Date().getTime(),
@@ -59,7 +57,8 @@ export class EventbusClient {
 
   public async publish(msg: EventbusMessage): Promise<void> {
     if (this.client) {
-      this.client.publish(publishTopic, JSON.stringify(msg));
+      const topic = `${stateTopic}/${msg.type}`;
+      this.client.publish(topic, JSON.stringify(msg), { retain: true });
     }
   }
 }
