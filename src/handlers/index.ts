@@ -8,20 +8,28 @@ import TimeElapsed from './time-elapsed';
 import { ActionHandler, ConditionHandler, ItemHandler } from './types';
 import Webhook from './webhook';
 
-export const actionHandlers: Record<ActionImpl['type'], ActionHandler> = {
+const actionHandlers: Record<ActionImpl['type'], ActionHandler> = {
   BlockPatch,
   TaskEdit,
   Webhook,
 };
 
-export const conditionHandlers: Record<ConditionImpl['type'], ConditionHandler> = {
+const conditionHandlers: Record<ConditionImpl['type'], ConditionHandler> = {
   BlockValue,
   TaskStatus,
   TimeAbsolute,
   TimeElapsed,
 };
 
-export const handlers: Record<AutomationImpl['type'], ItemHandler> = {
+const handlers: Record<AutomationImpl['type'], ItemHandler> = {
   ...actionHandlers,
   ...conditionHandlers,
 };
+
+export function getHandler(type: ActionImpl['type']): ActionHandler;
+export function getHandler(type: ConditionImpl['type']): ConditionHandler;
+export function getHandler(type: AutomationImpl['type']): ItemHandler;
+
+export function getHandler(type: AutomationImpl['type']): ItemHandler {
+  return handlers[type];
+}

@@ -9,12 +9,15 @@ import { errorText, validateMessage } from './validation';
 
 const stateTopic = 'brewcast/state';
 
+const cacheKey = (obj: Pick<EventbusMessage, 'key' | 'type'>): string =>
+  `${obj.key}__${obj.type}`;
+
 export class EventbusClient {
   private client: mqtt.Client | null = null;
   private cache: Record<string, CachedMessage> = {};
 
-  public getCached(key: string, type: string): any | null {
-    const msg = this.cache[`${key}__${type}`];
+  public getCached(key: string, type: string): EventbusMessage['data'] | null {
+    const msg = this.cache[cacheKey({ key, type })];
     if (msg === undefined) {
       return null;
     }
@@ -49,16 +52,16 @@ export class EventbusClient {
     if (message.key === args.name) {
       return;
     }
-    this.cache[`${message.key}__${message.type}`] = {
+    this.cache[cacheKey(message)] = {
       ...message,
       received: new Date().getTime(),
     };
   }
 
-  public async publish(msg: EventbusMessage): Promise<void> {
+  public async publish(msg: EventbusMessage, opts?: mqtt.IClientPublishOptions): Promise<void> {
     if (this.client) {
       const topic = `${stateTopic}/${msg.type}`;
-      this.client.publish(topic, JSON.stringify(msg), { retain: true });
+      this.client.publish(topic, JSON.stringify(msg), opts);
     }
   }
 }
