@@ -40,7 +40,11 @@ export class EventbusClient {
 
     this.client.on('error', e => logger.error(`mqtt error: ${e}`));
     this.client.on('connect', () => this.client.subscribe(stateTopic + '/#'));
-    this.client.on('message', (topic, body) => this.onMessage(topic, JSON.parse(body.toString())));
+    this.client.on('message', (topic: string, body: Buffer) => {
+      if (body && body.length > 0) {
+        this.onMessage(topic, JSON.parse(body.toString()));
+      }
+    });
   }
 
   private onMessage(topic: string, message: EventbusMessage): void {
