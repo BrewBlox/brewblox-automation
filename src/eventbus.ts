@@ -1,21 +1,23 @@
-import amqplib, { Channel, Message } from 'amqplib';
+import mqtt from 'mqtt';
 import parseDuration from 'parse-duration';
 
+import args from './args';
 import { blockEventType } from './getters';
 import logger from './logger';
 import { Block, CachedMessage, EventbusMessage } from './types';
 import { errorText, validateMessage } from './validation';
 
-const statusExchange = 'brewcast.state';
-const publishKey = 'automation.output';
+const stateTopic = 'brewcast/state';
+
+const cacheKey = (obj: Pick<EventbusMessage, 'key' | 'type'>): string =>
+  `${obj.key}__${obj.type}`;
 
 export class EventbusClient {
-  private lastOk = true;
-  private channel: Channel | null = null;
+  private client: mqtt.Client | null = null;
   private cache: Record<string, CachedMessage> = {};
 
-  public getCached(key: string, type: string): any | null {
-    const msg = this.cache[`${key}__${type}`];
+  public getCached(key: string, type: string): EventbusMessage['data'] | null {
+    const msg = this.cache[cacheKey({ key, type })];
     if (msg === undefined) {
       return null;
     }
@@ -30,59 +32,40 @@ export class EventbusClient {
   }
 
   public async connect(): Promise<void> {
-    try {
-      const conn = await amqplib.connect('amqp://eventbus:5672');
-      conn.on('close', () => {
-        logger.info('Eventbus closed');
-        this.retry();
-      });
+    const opts: mqtt.IClientOptions = {
+      protocol: 'mqtt',
+      host: 'eventbus',
+    };
+    this.client = mqtt.connect(undefined, opts);
 
-      this.channel = await conn.createChannel();
-      const queue = await this.channel.assertQueue('', { exclusive: true });
-
-      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
-      await this.channel.bindQueue(queue.queue, statusExchange, '#');
-      await this.channel.consume(queue.queue, msg => this.onMessage(msg));
-
-      this.lastOk = true;
-      logger.info(`Starting eventbus sync: ${statusExchange}`);
-    }
-    catch (e) {
-      if (this.lastOk) {
-        logger.warn(`Failed to connect: ${e.message}`);
-        this.lastOk = false;
+    this.client.on('error', e => logger.error(`mqtt error: ${e}`));
+    this.client.on('connect', () => this.client.subscribe(stateTopic + '/#'));
+    this.client.on('message', (topic: string, body: Buffer) => {
+      if (body && body.length > 0) {
+        this.onMessage(topic, JSON.parse(body.toString()));
       }
-      this.retry();
-    }
+    });
   }
 
-  private retry(): void {
-    setTimeout(() => this.connect(), 2000);
-  }
-
-  private onMessage(msg: Message): void {
-    this.channel.ack(msg);
-    if (msg.fields.routingKey === publishKey) {
-      // Ignore messages sent by publish()
-      return;
-    }
-    const message: EventbusMessage = JSON.parse(msg.content.toString());
+  private onMessage(topic: string, message: EventbusMessage): void {
     if (!validateMessage(message)) {
-      logger.warn(`Discarded eventbus message from '${message.key}'`);
+      logger.warn(`Discarded eventbus message from '${topic}'`);
       logger.warn(errorText());
       return;
     }
-
-    this.cache[`${message.key}__${message.type}`] = {
+    if (message.key === args.name) {
+      return;
+    }
+    this.cache[cacheKey(message)] = {
       ...message,
       received: new Date().getTime(),
     };
   }
 
-  public async publish(msg: EventbusMessage): Promise<void> {
-    if (this.channel) {
-      await this.channel.assertExchange(statusExchange, 'topic', { autoDelete: true, durable: false });
-      this.channel.publish(statusExchange, publishKey, Buffer.from(JSON.stringify(msg)));
+  public async publish(msg: EventbusMessage, opts?: mqtt.IClientPublishOptions): Promise<void> {
+    if (this.client) {
+      const topic = `${stateTopic}/${msg.type}`;
+      this.client.publish(topic, JSON.stringify(msg), opts);
     }
   }
 }

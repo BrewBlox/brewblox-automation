@@ -6,7 +6,7 @@ import { v4 as uid } from 'uuid';
 import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
-import { actionHandlers, conditionHandlers, handlers } from './handlers';
+import { getHandler } from './handlers';
 import logger from './logger';
 import {
   AutomationCondition,
@@ -78,7 +78,7 @@ const errorResult = (opts: HandlerOpts, error: string): AutomationStepResult => 
  */
 const evaluateConditions = async (opts: HandlerOpts, conditions: AutomationCondition[]): Promise<boolean> => {
   for (const condition of conditions.filter(v => v.enabled)) {
-    const handler = conditionHandlers[condition.impl.type];
+    const handler = getHandler(condition.impl.type);
     if (!await handler.check(condition, opts)) {
       return false;
     }
@@ -243,7 +243,7 @@ const prepareStep: UpdateFunc = async (opts) => {
       .filter(v => v.enabled);
 
     for (const item of items) {
-      await handlers[item.impl.type].prepare(item, opts);
+      await getHandler(item.impl.type).prepare(item, opts);
     }
   }
   catch (e) {
@@ -299,7 +299,7 @@ const applyActions: UpdateFunc = async (opts) => {
 
   try {
     for (const action of activeStep.actions.filter(v => v.enabled)) {
-      const handler = actionHandlers[action.impl.type];
+      const handler = getHandler(action.impl.type);
       await handler.apply(action, opts);
     }
     return createResult({
@@ -454,10 +454,10 @@ export class Processor {
 
       await eventbus.publish({
         key: args.name,
-        type: 'Automation.active',
+        type: 'automation.active',
         data: { processes, tasks },
         ttl: '60s',
-      });
+      }, { retain: true });
     }
     catch (e) {
       logger.error(`Processor update error: ${e.message}`);

@@ -35,7 +35,7 @@ const handler: ActionHandler<BlockPatchImpl> = {
       .filter(([k]) => !baseKeys.includes(stripPostFix(k)))
       .forEach(([k, v]) => blockData[k] = v);
 
-    await axios.put(`http://${impl.serviceId}:5000/${impl.serviceId}/objects/${encodeURIComponent(impl.blockId)}`, {
+    await axios.post(`http://${impl.serviceId}:5000/${impl.serviceId}/blocks/write`, {
       ...block,
       data: {
         ...blockData,
