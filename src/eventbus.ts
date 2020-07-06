@@ -31,6 +31,12 @@ export class EventbusClient {
     return this.getCached(serviceId, blockEventType) ?? [];
   }
 
+  public getSparks(): string[] {
+    return Object.keys(this.cache)
+      .filter(k => k.endsWith(blockEventType))
+      .map(k => k.split('__')[0]);
+  }
+
   public async connect(): Promise<void> {
     const opts: mqtt.IClientOptions = {
       protocol: 'mqtt',

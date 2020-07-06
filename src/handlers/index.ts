@@ -6,6 +6,7 @@ import TaskStatus from './task-status';
 import TimeAbsolute from './time-absolute';
 import TimeElapsed from './time-elapsed';
 import { ActionHandler, ConditionHandler, ItemHandler } from './types';
+import UserScript from './user-script';
 import Webhook from './webhook';
 
 const actionHandlers: Record<ActionImpl['type'], ActionHandler> = {
@@ -19,6 +20,7 @@ const conditionHandlers: Record<ConditionImpl['type'], ConditionHandler> = {
   TaskStatus,
   TimeAbsolute,
   TimeElapsed,
+  UserScript,
 };
 
 const handlers: Record<AutomationImpl['type'], ItemHandler> = {
