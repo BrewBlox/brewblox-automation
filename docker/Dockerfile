@@ -1,14 +1,14 @@
 FROM node:12 as base
-
-COPY ./package.json /app/package.json
-COPY ./package-lock.json /app/package-lock.json
-RUN cd /app && npm ci
-
-FROM node:12-alpine
-EXPOSE 5000
 WORKDIR /app
 
-COPY ./dist /app/dist
-COPY --from=base /app/node_modules /app/node_modules
+COPY ./package*.json /app/
+RUN npm ci
 
-ENTRYPOINT [ "node", "dist/main.js" ]
+FROM node:12-alpine
+WORKDIR /app
+EXPOSE 5000
+
+COPY ./src/ ./tsconfig.json ./package*.json /app/
+COPY --from=base /app/node_modules /app/
+
+ENTRYPOINT ["node_modules/.bin/ts-node", "src/main.ts"]

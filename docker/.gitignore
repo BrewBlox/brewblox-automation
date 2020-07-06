@@ -1,3 +1,5 @@
 dist/
 config/
 package*.json
+tsconfig.json
+src/
