@@ -171,7 +171,7 @@
               "$ref": "#/definitions/BlockValueImpl"
             },
             {
-              "$ref": "#/definitions/UserScriptImpl"
+              "$ref": "#/definitions/JSCheckImpl"
             },
             {
               "$ref": "#/definitions/TaskStatusImpl"
@@ -303,13 +303,13 @@
         "value"
       ]
     },
-    "UserScriptImpl": {
+    "JSCheckImpl": {
       "type": "object",
       "properties": {
         "type": {
           "type": "string",
           "enum": [
-            "UserScript"
+            "JSCheck"
           ]
         },
         "body": {

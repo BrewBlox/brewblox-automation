@@ -6,18 +6,13 @@ import isString from 'lodash/isString';
 import { NodeVM } from 'vm2';
 
 import { eventbus } from './eventbus';
+import { SandboxResult } from './shared-types';
 import { Block } from './types';
 
 
 interface GlobalBlock extends Block {
   serviceId: string;
 }
-
-export interface SandboxResult {
-  result: any;
-  logs: any[];
-  error?: string;
-};
 
 const checks: ((v: any) => boolean)[] = [
   v => v == null,
@@ -61,10 +56,10 @@ export async function sandboxApi(): Promise<any> {
 export async function runIsolated(script: string): Promise<SandboxResult> {
   const api = await sandboxApi();
 
-  const logs: any[] = [];
+  const messages: any[] = [];
   const print = (...args: any[]) => {
     const data = args.length > 1 ? args : args[0];
-    logs.push(sanitize(data));
+    messages.push(sanitize(data));
   };
 
   const vm = new NodeVM({
@@ -76,10 +71,24 @@ export async function runIsolated(script: string): Promise<SandboxResult> {
   vm.on('console.log', print);
 
   try {
-    const result = vm.run(script);
-    return { result, logs };
+    const returnValue = vm.run(script);
+    return {
+      date: new Date().getTime(),
+      returnValue,
+      messages,
+    };
   }
   catch (e) {
-    return { result: null, logs, error: e.message };
+    const [[, line]] = [...e.stack.matchAll(/vm\.js:(\d+):/gi)];
+
+    return {
+      date: new Date().getTime(),
+      returnValue: null,
+      messages,
+      error: {
+        message: e.message,
+        line: Number(line),
+      },
+    };
   }
 }

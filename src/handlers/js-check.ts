@@ -1,12 +1,12 @@
 import { runIsolated } from '../sandbox';
-import { UserScriptImpl } from '../types';
+import { JSCheckImpl } from '../types';
 import { ConditionHandler } from './types';
 
 
 /**
  * Send a HTTP request with defined config.
  */
-const handler: ConditionHandler<UserScriptImpl> = {
+const handler: ConditionHandler<JSCheckImpl> = {
 
   async prepare(opts) {
     void opts;
@@ -14,7 +14,9 @@ const handler: ConditionHandler<UserScriptImpl> = {
 
   async check({ impl }) {
     const retv = await runIsolated(impl.body);
-    return retv.result === true; // Very strict equality check
+    // Very strict equality check
+    // truthy objects such as {} or 'false' must not evaluate true
+    return retv.returnValue === true;
   },
 };
 
