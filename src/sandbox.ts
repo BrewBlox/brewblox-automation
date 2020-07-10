@@ -1,3 +1,5 @@
+import axios from 'axios';
+import find from 'lodash/find';
 import isArray from 'lodash/isArray';
 import isBoolean from 'lodash/isBoolean';
 import isNumber from 'lodash/isNumber';
@@ -28,11 +30,15 @@ const simpleValue = (val: any) =>
     ? val
     : `[${typeof val}]`;
 
+const stripPostfix = (v: string): string =>
+  v.replace(/(\[.+\]|<.+>)$/, '');
+
 export function sanitize(values: any): any {
   return JSON.parse(JSON.stringify(values, (_, v) => simpleValue(v)));
 }
 
-export async function sandboxApi(): Promise<any> {
+export async function sandboxApi() {
+  const messages: any[] = [];
   const blocks: GlobalBlock[] = eventbus
     .getSparks()
     .map(serviceId => eventbus.getBlocks(serviceId).map(block => ({ ...block, serviceId })))
@@ -42,49 +48,55 @@ export async function sandboxApi(): Promise<any> {
     return blocks.find(v => v.serviceId === serviceId && v.id === blockId);
   };
 
-  return {
-    blocks,
-    getBlock(serviceId: string, blockId: string): Block | null {
-      return findBlock(serviceId, blockId);
-    },
-    getField(serviceId: string, blockId: string, field: string) {
-      return findBlock(serviceId, blockId)?.data[field] ?? null;
-    },
-  };
-}
-
-export async function runIsolated(script: string): Promise<SandboxResult> {
-  const api = await sandboxApi();
-
-  const messages: any[] = [];
   const print = (...args: any[]) => {
     const data = args.length > 1 ? args : args[0];
     messages.push(sanitize(data));
   };
 
+  return {
+    messages,
+    blocks,
+    print,
+    axios,
+    getBlock(serviceId: string, blockId: string): Block | null {
+      const block = findBlock(serviceId, blockId);
+      print(`getBlock('${serviceId}', '${blockId}')`, block);
+      return block;
+    },
+    getBlockField(serviceId: string, blockId: string, field: string): any | null {
+      const data = findBlock(serviceId, blockId)?.data ?? {};
+      const value = find(data, (_, k) => field === k || field === stripPostfix(k)) ?? null;
+      print(`getField('${serviceId}', '${blockId}', '${field}')`, value);
+      return value;
+    },
+  };
+}
+
+export async function runIsolated(script: string): Promise<SandboxResult> {
+  const sandbox = await sandboxApi();
+
   const vm = new NodeVM({
     console: 'redirect',
     wrapper: 'none',
-    sandbox: { ...api, print },
+    sandbox,
   });
 
-  vm.on('console.log', print);
+  vm.on('console.log', sandbox.print);
 
   try {
-    const returnValue = vm.run(script);
+    const returnValue = await vm.run(script);
     return {
       date: new Date().getTime(),
+      messages: sandbox.messages,
       returnValue,
-      messages,
     };
   }
   catch (e) {
-    const [[, line]] = [...e.stack.matchAll(/vm\.js:(\d+):/gi)];
-
+    const [[, line]] = [...e.stack.matchAll(/vm\.js:(\d+)/gi)];
     return {
       date: new Date().getTime(),
+      messages: sandbox.messages,
       returnValue: null,
-      messages,
       error: {
         message: e.message,
         line: Number(line),

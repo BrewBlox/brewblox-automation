@@ -57,7 +57,6 @@ export interface SandboxResult {
   messages: any[];
   error?: SandboxError;
 }
-
 /**
  * Update block.data with given object.
  */
