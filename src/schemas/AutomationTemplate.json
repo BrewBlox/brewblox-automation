@@ -95,6 +95,9 @@
               "$ref": "#/definitions/BlockValueImpl"
             },
             {
+              "$ref": "#/definitions/JSCheckImpl"
+            },
+            {
               "$ref": "#/definitions/TaskStatusImpl"
             }
           ]
@@ -120,6 +123,7 @@
         "time": {
           "description": "Desired time.",
           "type": [
+            "string",
             "number",
             "null"
           ]
@@ -201,7 +205,7 @@
           "description": "Compared value."
         },
         "operator": {
-          "description": "Comparison approach.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",
+          "description": "Comparison operator.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",
           "enum": [
             "eq",
             "ge",
@@ -221,6 +225,24 @@
         "serviceId",
         "type",
         "value"
+      ]
+    },
+    "JSCheckImpl": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "JSCheck"
+          ]
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "body",
+        "type"
       ]
     },
     "TaskStatusImpl": {

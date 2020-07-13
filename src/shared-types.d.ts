@@ -3,21 +3,29 @@
  */
 import { Method } from 'axios';
 
+export interface ReqBlockAddress {
+  serviceId: string;
+  type: string;
+  id: string;
+}
+
 /**
  * Generic status type for Automation types.
  * It is used by multiple types.
  */
 export type AutomationStatus =
-  'Invalid'       // Configuration missing or invalid.
+  | 'Invalid'     // Configuration missing or invalid.
   | 'Created'     // In progress. Not yet evaluated.
   | 'Active'      // In progress.
   | 'Retrying'    // In progress. Attempting to automatically recover from error.
   | 'Paused'      // In progress. Execution temporarily halted.
   | 'Finished'    // End state. Success.
-  | 'Cancelled';  // End state. Execution prematurely ended.
+  | 'Cancelled'   // End state. Execution prematurely ended.
 
-/** @nullable */
-type Datum = number | null;
+/**
+ * Serialized Date value (number in ms, or ISO-8601)
+ */
+type DateTime = number | string;
 
 /**
  * @pattern ^[0-9a-fA-F\-]{36}$
@@ -38,50 +46,17 @@ export interface StoreObject {
   _rev?: string;
 }
 
-export interface AutomationTask extends StoreObject {
-  /**
-   * User-defined reference ID.
-   * Not required to be unique.
-   */
-  ref: string;
-
-  /**
-   * Human-readable name.
-   */
-  title: string;
-
-  /**
-   * Message body.
-   */
+export interface SandboxError {
   message: string;
-
-  /**
-   * Current status. May be evaluated by TaskStatusImpl
-   */
-  status: AutomationStatus;
-
-  /**
-   * Tasks can be created manually, or by a process.
-   * If created by a process, processId and stepId will be set.
-   * This allows multiple processes to re-use the same ref.
-   */
-  createdBy: 'User' | 'Action' | 'Condition';
-
-  /**
-   * Set if automatically created.
-   */
-  processId?: UUID;
-
-  /**
-   * Set if automatically created.
-   */
-  stepId?: UUID;
+  line: number;
 }
 
-////////////////////////////////////////////////////////////////
-// Actions
-////////////////////////////////////////////////////////////////
-
+export interface SandboxResult {
+  date: DateTime;
+  returnValue: any;
+  messages: any[];
+  error?: SandboxError;
+}
 /**
  * Update block.data with given object.
  */
@@ -177,18 +152,11 @@ export interface WebhookImpl {
   body: string;
 }
 
-/**
- * Combining type for all actions.
- */
-export type ActionImpl =
-  BlockPatchImpl
-  | TaskEditImpl
-  | WebhookImpl
-  ;
+// export interface JSApplyImpl {
+//   type: 'JSApply';
 
-////////////////////////////////////////////////////////////////
-// Conditions
-////////////////////////////////////////////////////////////////
+//   body: string;
+// }
 
 /**
  * Waits until current time is later than desired.
@@ -199,8 +167,9 @@ export interface TimeAbsoluteImpl {
 
   /**
    * Desired time.
+   * @nullable
    */
-  time: Datum;
+  time: DateTime | null;
 }
 
 /**
@@ -259,11 +228,17 @@ export interface BlockValueImpl {
   value: any;
 
   /**
-   * Comparison approach.
+   * Comparison operator.
    * The left-hand value is current value (block.data[key]).
    * The right-hand value is the condition value.
    */
   operator: 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt';
+}
+
+export interface JSCheckImpl {
+  type: 'JSCheck';
+
+  body: string;
 }
 
 /**
@@ -294,19 +269,45 @@ export interface TaskStatusImpl {
   status: AutomationStatus;
 }
 
-/**
- * Combining type for all conditions
- */
-export type ConditionImpl =
-  TimeAbsoluteImpl
-  | TimeElapsedImpl
-  | BlockValueImpl
-  | TaskStatusImpl
-  ;
+export interface AutomationTask extends StoreObject {
+  /**
+   * User-defined reference ID.
+   * Not required to be unique.
+   */
+  ref: string;
 
-////////////////////////////////////////////////////////////////
-// Generic
-////////////////////////////////////////////////////////////////
+  /**
+   * Human-readable name.
+   */
+  title: string;
+
+  /**
+   * Message body.
+   */
+  message: string;
+
+  /**
+   * Current status. May be evaluated by TaskStatusImpl
+   */
+  status: AutomationStatus;
+
+  /**
+   * Tasks can be created manually, or by a process.
+   * If created by a process, processId and stepId will be set.
+   * This allows multiple processes to re-use the same ref.
+   */
+  createdBy: 'User' | 'Action' | 'Condition';
+
+  /**
+   * Set if automatically created.
+   */
+  processId?: UUID;
+
+  /**
+   * Set if automatically created.
+   */
+  stepId?: UUID;
+}
 
 /**
  * Generic type for all action / condition Impl types.
@@ -315,6 +316,25 @@ export type ConditionImpl =
 export interface AutomationImpl {
   type: string;
 }
+
+/**
+ * Combining type for all actions.
+ */
+export type ActionImpl =
+  | BlockPatchImpl
+  | TaskEditImpl
+  | WebhookImpl
+// | JSApplyImpl
+
+/**
+ * Combining type for all conditions
+ */
+export type ConditionImpl =
+  | TimeAbsoluteImpl
+  | TimeElapsedImpl
+  | BlockValueImpl
+  | JSCheckImpl
+  | TaskStatusImpl
 
 /**
  * Common fields for all items.
@@ -415,16 +435,16 @@ export interface AutomationTemplate extends StoreObject {
 }
 
 export type AutomationStepActivePhase =
-  'Created'             // In progress. Not yet evaluated.
+  | 'Created'           // In progress. Not yet evaluated.
   | 'Preconditions'     // In progress. Checking preconditions.
   | 'Actions'           // In progress. Applying actions.
   | 'Transitions'       // In progress. Checking transitions.
 
 export type AutomationStepPhase =
-  AutomationStepActivePhase
+  | AutomationStepActivePhase
   | 'Invalid'           // Configuration missing or invalid.
   | 'Finished'          // End state. Success.
-  | 'Cancelled';        // End state. Execution prematurely ended.
+  | 'Cancelled'         // End state. Execution prematurely ended.
 
 /**
  * A single result from process execution.
@@ -444,7 +464,7 @@ export interface AutomationStepResult {
   /**
    * Date when the result was generated.
    */
-  date: Datum;
+  date: DateTime;
 
   /**
    * Current status for the relevant step.

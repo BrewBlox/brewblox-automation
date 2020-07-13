@@ -1,5 +1,8 @@
+import { DateTime } from '../shared-types';
 import { TimeElapsedImpl } from '../types';
 import { ConditionHandler } from './types';
+
+const ms = (date: DateTime): number => new Date(date).getTime();
 
 /**
  * Wait for a set amount of time to be elapsed.
@@ -18,7 +21,7 @@ const handler: ConditionHandler<TimeElapsedImpl> = {
       return true;
     }
     if (impl.start === 'Process') {
-      const startTime = proc.results[0].date;
+      const startTime = ms(proc.results[0].date);
       return startTime + impl.duration < new Date().getTime();
     }
     else if (impl.start === 'Step') {
@@ -29,7 +32,7 @@ const handler: ConditionHandler<TimeElapsedImpl> = {
           const startResult = proc.results.slice(i)
             .find(v => v.stepId === activeStep.id && v.phase === activeResult.phase);
           return startResult !== undefined
-            ? startResult.date + impl.duration < new Date().getTime()
+            ? ms(startResult.date) + impl.duration < new Date().getTime()
             : false;
         }
       }
