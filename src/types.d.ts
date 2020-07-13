@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////
 
 export * from './shared-types';
-import { AutomationProcess, AutomationStep, AutomationStepResult } from './shared-types';
+import { AutomationProcess, AutomationStep, AutomationStepResult, AutomationTask } from './shared-types';
 
 export interface EventbusMessage {
   key: string;
@@ -28,4 +28,18 @@ export interface HandlerOpts {
   proc: AutomationProcess;
   activeStep: AutomationStep;
   activeResult: AutomationStepResult;
+}
+
+export interface SparkStateMessage extends EventbusMessage {
+  data: {
+    service: any;
+    blocks: Block[];
+  }
+}
+
+export interface AutomationStateMessage extends EventbusMessage {
+  data: {
+    processes: AutomationProcess[];
+    tasks: AutomationTask[];
+  }
 }

@@ -1,1 +1,1 @@
-export const blockEventType = 'Spark.blocks';
+export const sparkStateType = 'Spark.state';
