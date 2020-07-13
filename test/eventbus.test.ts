@@ -18,7 +18,7 @@ describe('Eventbus message parsing', () => {
   const callbacks: { [key: string]: Function } = {};
   const mockClient = {
     on: jest.fn((n, cb) => callbacks[n] = cb),
-    publish: jest.fn(),
+    publishActive: jest.fn(),
     subscribe: jest.fn(),
   };
   _mqtt.connect.mockReturnValue(mockClient);

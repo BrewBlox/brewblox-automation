@@ -3,7 +3,6 @@ import isString from 'lodash/isString';
 import takeRight from 'lodash/takeRight';
 import { v4 as uid } from 'uuid';
 
-import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { getHandler } from './handlers';
@@ -451,13 +450,7 @@ export class Processor {
 
       const processes = await processDb.fetchAll();
       const tasks = await taskDb.fetchAll();
-
-      await eventbus.publish({
-        key: args.name,
-        type: 'automation.active',
-        data: { processes, tasks },
-        ttl: '60s',
-      }, { retain: true });
+      await eventbus.publishActive({ processes, tasks });
     }
     catch (e) {
       logger.error(`Processor update error: ${e.message}`);

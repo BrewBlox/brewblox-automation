@@ -2,15 +2,24 @@ import mqtt from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
-import { blockEventType } from './getters';
+import { sparkStateType } from './getters';
 import logger from './logger';
-import { Block, CachedMessage, EventbusMessage } from './types';
+import { AutomationStateMessage, Block, CachedMessage, EventbusMessage } from './types';
 import { errorText, validateMessage } from './validation';
 
 const stateTopic = 'brewcast/state';
+const publishTopic = 'brewcast/state/automation';
+const stateType = 'automation.active';
 
 const cacheKey = (obj: Pick<EventbusMessage, 'key' | 'type'>): string =>
   `${obj.key}__${obj.type}`;
+
+const stateMessage = (data: AutomationStateMessage['data']): AutomationStateMessage => ({
+  key: args.name,
+  type: stateType,
+  ttl: '60s',
+  data,
+});
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
@@ -28,19 +37,26 @@ export class EventbusClient {
   }
 
   public getBlocks(serviceId: string): Block[] {
-    return this.getCached(serviceId, blockEventType) ?? [];
+    return this.getCached(serviceId, sparkStateType)?.blocks ?? [];
   }
 
   public getSparks(): string[] {
-    return Object.keys(this.cache)
-      .filter(k => k.endsWith(blockEventType))
-      .map(k => k.split('__')[0]);
+    return Object.values(this.cache)
+      .filter(msg => msg.type === sparkStateType)
+      .map(msg => msg.key);
   }
 
   public async connect(): Promise<void> {
+    const emptyMessage = stateMessage({ processes: [], tasks: [] });
     const opts: mqtt.IClientOptions = {
       protocol: 'mqtt',
       host: 'eventbus',
+      will: {
+        topic: publishTopic,
+        payload: JSON.stringify(emptyMessage),
+        qos: 0,
+        retain: true,
+      },
     };
     this.client = mqtt.connect(undefined, opts);
 
@@ -68,10 +84,10 @@ export class EventbusClient {
     };
   }
 
-  public async publish(msg: EventbusMessage, opts?: mqtt.IClientPublishOptions): Promise<void> {
+  public async publishActive(data: AutomationStateMessage['data']) {
     if (this.client) {
-      const topic = `${stateTopic}/${msg.type}`;
-      this.client.publish(topic, JSON.stringify(msg), opts);
+      const payload = JSON.stringify(stateMessage(data));
+      this.client.publish(publishTopic, payload, { retain: true });
     }
   }
 }
