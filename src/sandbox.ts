@@ -34,7 +34,7 @@ const stripPostfix = (v: string): string =>
   v.replace(/(\[.+\]|<.+>)$/, '');
 
 export function sanitize(values: any): any {
-  return JSON.parse(JSON.stringify(values, (_, v) => simpleValue(v)));
+  return JSON.parse(JSON.stringify(values ?? null, (_, v) => simpleValue(v)));
 }
 
 export async function sandboxApi() {
@@ -84,7 +84,7 @@ export async function runIsolated(script: string): Promise<SandboxResult> {
   vm.on('console.log', sandbox.print);
 
   try {
-    const returnValue = await vm.run(script);
+    const returnValue = sanitize(await vm.run(script));
     return {
       date: new Date().getTime(),
       messages: sandbox.messages,
@@ -92,14 +92,13 @@ export async function runIsolated(script: string): Promise<SandboxResult> {
     };
   }
   catch (e) {
-    const [[, line]] = [...e.stack.matchAll(/vm\.js:(\d+)/gi)];
     return {
       date: new Date().getTime(),
       messages: sandbox.messages,
       returnValue: null,
       error: {
         message: e.message,
-        line: Number(line),
+        line: Number(e.stack.match(/.*vm\.js:(\d+).*/)?.[1] ?? null),
       },
     };
   }
