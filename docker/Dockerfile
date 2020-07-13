@@ -11,4 +11,4 @@ EXPOSE 5000
 COPY ./src/ ./tsconfig.json ./package*.json /app/
 COPY --from=base /app/node_modules /app/
 
-ENTRYPOINT ["node_modules/.bin/ts-node", "src/main.ts"]
+ENTRYPOINT ["npx", "ts-node", "src/main.ts"]
