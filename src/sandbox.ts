@@ -12,10 +12,6 @@ import { SandboxResult } from './shared-types';
 import { Block } from './types';
 
 
-interface GlobalBlock extends Block {
-  serviceId: string;
-}
-
 const checks: ((v: any) => boolean)[] = [
   v => v == null,
   isString,
@@ -33,15 +29,17 @@ const simpleValue = (val: any) =>
 const stripPostfix = (v: string): string =>
   v.replace(/(\[.+\]|<.+>)$/, '');
 
-export function sanitize(values: any): any {
-  return JSON.parse(JSON.stringify(values ?? null, (_, v) => simpleValue(v)));
+export function sanitize(values: any, parse = true): any {
+  const serialized = JSON.stringify(values ?? null, (_, v) => simpleValue(v));
+  return parse ? JSON.parse(serialized) : serialized;
 }
 
 export async function sandboxApi() {
   const messages: any[] = [];
-  const blocks: GlobalBlock[] = eventbus
+  const blocks: Block[] = eventbus
     .getSparks()
-    .map(serviceId => eventbus.getBlocks(serviceId).map(block => ({ ...block, serviceId })))
+    .map(serviceId => eventbus.getBlocks(serviceId))
+    .map(v => sanitize(v))
     .flat(1);
 
   const findBlock = (serviceId: string, blockId: string): Block | null => {
@@ -68,6 +66,19 @@ export async function sandboxApi() {
       const value = find(data, (_, k) => field === k || field === stripPostfix(k)) ?? null;
       print(`getField('${serviceId}', '${blockId}', '${field}')`, value);
       return value;
+    },
+    async saveBlock(block: Block): Promise<Block> {
+      const { id, serviceId } = block;
+      const desc = `saveBlock({id: '${id}', serviceId: '${serviceId}', ...})`;
+      print(desc, block);
+      const resp = await axios.post<Block>(`http://${serviceId}:5000/${serviceId}/blocks/write`, block);
+      const updated = resp.data;
+      print(desc, 'result', updated);
+      return updated;
+    },
+    async publishEvent(topic: string, data: any): Promise<void> {
+      print(`publishEvent('${topic}', {...})`, data);
+      await eventbus.publishRaw(topic, sanitize(data, false));
     },
   };
 }

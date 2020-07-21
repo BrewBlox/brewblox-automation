@@ -29,16 +29,16 @@ const handler: ActionHandler<BlockPatchImpl> = {
 
     // Filter keys with the same root but a different postfix
     // We want 'key[min]' in impl.data to override 'key[s]' in block data
-    const baseKeys = Object.keys(impl.data).map(k => stripPostFix(k));
-    const blockData = {};
+    const updatedKeys = Object.keys(impl.data).map(k => stripPostFix(k));
+    const unchangedData = {};
     Object.entries(block.data)
-      .filter(([k]) => !baseKeys.includes(stripPostFix(k)))
-      .forEach(([k, v]) => blockData[k] = v);
+      .filter(([k]) => !updatedKeys.includes(stripPostFix(k)))
+      .forEach(([k, v]) => unchangedData[k] = v);
 
     await axios.post(`http://${impl.serviceId}:5000/${impl.serviceId}/blocks/write`, {
       ...block,
       data: {
-        ...blockData,
+        ...unchangedData,
         ...impl.data,
       },
     });
