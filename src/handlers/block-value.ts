@@ -16,22 +16,22 @@ const compare: Record<BlockValueImpl['operator'], ((v1: any, v2: any) => boolean
 };
 
 interface Unit {
-  __metaclass: 'Unit';
+  __bloxtype: 'Unit';
   value: number;
   unit: string;
 }
 
 interface Link {
-  __metaclass: 'Link';
+  __bloxtype: 'Link';
   id: string;
   type: string;
 }
 
 const isUnit = (obj: any): obj is Unit =>
-  isObject(obj) && (obj as Unit).__metaclass === 'Unit';
+  isObject(obj) && (obj as Unit).__bloxtype === 'Unit';
 
 const isLink = (obj: any): obj is Link =>
-  isObject(obj) && (obj as Link).__metaclass === 'Link';
+  isObject(obj) && (obj as Link).__bloxtype === 'Link';
 
 const resolveMeta = (obj: any): any => {
   if (isUnit(obj)) {
