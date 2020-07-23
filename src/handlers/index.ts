@@ -1,6 +1,7 @@
 import { ActionImpl, AutomationImpl, ConditionImpl } from '../types';
 import BlockPatch from './block-patch';
 import BlockValue from './block-value';
+import JSApply from './js-apply';
 import JSCheck from './js-check';
 import TaskEdit from './task-edit';
 import TaskStatus from './task-status';
@@ -11,6 +12,7 @@ import Webhook from './webhook';
 
 const actionHandlers: Record<ActionImpl['type'], ActionHandler> = {
   BlockPatch,
+  JSApply,
   TaskEdit,
   Webhook,
 };

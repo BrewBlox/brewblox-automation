@@ -1,4 +1,4 @@
-import mqtt from 'mqtt';
+import mqtt, { IClientPublishOptions } from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
@@ -88,6 +88,12 @@ export class EventbusClient {
     if (this.client) {
       const payload = JSON.stringify(stateMessage(data));
       this.client.publish(publishTopic, payload, { retain: true });
+    }
+  }
+
+  public async publishRaw(topic: string, payload: string, opts?: IClientPublishOptions) {
+    if (this.client) {
+      this.client.publish(topic, payload, opts);
     }
   }
 }

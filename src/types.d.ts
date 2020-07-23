@@ -19,6 +19,7 @@ export interface CachedMessage extends EventbusMessage {
 export interface Block {
   id: string;
   nid?: number;
+  serviceId: string;
   type: string;
   groups: number[];
   data: any;
