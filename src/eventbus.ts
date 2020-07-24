@@ -61,7 +61,7 @@ export class EventbusClient {
     this.client = mqtt.connect(undefined, opts);
 
     this.client.on('error', e => logger.error(`mqtt error: ${e}`));
-    this.client.on('connect', () => this.client.subscribe(stateTopic + '/#'));
+    this.client.on('connect', () => this.client!.subscribe(stateTopic + '/#'));
     this.client.on('message', (topic: string, body: Buffer) => {
       if (body && body.length > 0) {
         this.onMessage(topic, JSON.parse(body.toString()));
@@ -93,7 +93,7 @@ export class EventbusClient {
 
   public async publishRaw(topic: string, payload: string, opts?: IClientPublishOptions) {
     if (this.client) {
-      this.client.publish(topic, payload, opts);
+      this.client.publish(topic, payload, opts!);
     }
   }
 }

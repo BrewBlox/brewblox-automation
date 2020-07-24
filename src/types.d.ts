@@ -44,3 +44,17 @@ export interface AutomationStateMessage extends EventbusMessage {
     tasks: AutomationTask[];
   }
 }
+
+export interface JSONQuantity {
+  __bloxtype: 'Quantity';
+  value: number | null;
+  unit: string;
+  readonly?: boolean;
+}
+
+export interface JSONLink {
+  __bloxtype: 'Link';
+  id: string | null;
+  type: string;
+  driven?: boolean;
+}

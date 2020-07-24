@@ -38,7 +38,7 @@ export class DatabaseClient {
 
   private async checkRemote() {
     try {
-      await this.remoteDb.info();
+      await this.remoteDb!.info();
     } catch (e) {
       logger.warn(`Failed to check remote DB: ${e.message}`);
     }
@@ -80,7 +80,7 @@ export class AutomationDatabase<T extends StoreObject> {
   }
 
   private asDocument(obj: T): IdMeta & RevisionIdMeta {
-    const { id, _rev, ...doc } = obj;
+    const { id, _rev, ...doc } = obj as T & RevisionIdMeta;
     return { ...doc, _rev, _id: this.docId(id) };
   }
 
@@ -102,7 +102,7 @@ export class AutomationDatabase<T extends StoreObject> {
     const resp = await this.db.allDocs({ include_docs: true });
     return resp.rows
       .filter(row => this.checkInModule(row))
-      .map(row => this.asStoreObject(row.doc));
+      .map(row => this.asStoreObject(row.doc!));
   }
 
   public async fetchById(id: string): Promise<T | null> {

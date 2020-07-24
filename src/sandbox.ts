@@ -8,6 +8,7 @@ import isString from 'lodash/isString';
 import { NodeVM } from 'vm2';
 
 import { eventbus } from './eventbus';
+import { qty } from './quantity';
 import { SandboxResult } from './shared-types';
 import { Block } from './types';
 
@@ -43,7 +44,7 @@ export async function sandboxApi() {
     .flat(1);
 
   const findBlock = (serviceId: string, blockId: string): Block | null => {
-    return blocks.find(v => v.serviceId === serviceId && v.id === blockId);
+    return blocks.find(v => v.serviceId === serviceId && v.id === blockId) ?? null;
   };
 
   const print = (...args: any[]) => {
@@ -56,6 +57,7 @@ export async function sandboxApi() {
     blocks,
     print,
     axios,
+    qty,
     getBlock(serviceId: string, blockId: string): Block | null {
       const block = findBlock(serviceId, blockId);
       print(`getBlock('${serviceId}', '${blockId}')`, block);
