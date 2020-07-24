@@ -143,7 +143,7 @@ export class Quantity implements JSONQuantity {
   public copy(value?: number | null, unit?: string): Quantity {
     return new Quantity({
       ...this.toJSON(),
-      value: value ?? this.value,
+      value: value !== undefined ? value : this.value, // null is valid
       unit: unit ?? this.unit,
     });
   }
