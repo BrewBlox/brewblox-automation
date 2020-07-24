@@ -148,7 +148,6 @@ export class Quantity implements JSONQuantity {
     });
   }
 
-
   public lt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
     return toLibQty(this).lt(toLibQty(other));

@@ -31,7 +31,7 @@ describe('Check creating units', () => {
     expect(qty(10, 'degC').value).toBe(10);
     expect(qty(wrap(-2.5, 'delta_degC')).unit).toBe('delta_degC');
     expect(qty(wrap(1234, 'second')).copy().value).toBe(1234);
-    expect(qty('1d28m').unit).toBe('ms');
+    expect(qty('1d28m').unit).toBe('s');
 
     // ts-expect-error doesn't work on ts-jest errors
     expect(() => qty(10, null as any)).toThrow(/No unit set/);
