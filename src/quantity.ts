@@ -95,9 +95,8 @@ const tryFromJSON =
 const tryFromDuration =
   (value: any): JSONQuantity | null =>
     isDurationString(value)
-      ? fromArgs(durationMs(value), 'ms')
+      ? fromArgs(durationMs(value) / 1000, 's')
       : null;
-
 
 export class Quantity implements JSONQuantity {
   public __bloxtype: 'Quantity';
