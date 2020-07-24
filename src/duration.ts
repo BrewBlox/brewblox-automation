@@ -3,7 +3,8 @@ import isString from 'lodash/isString';
 import parseDuration from 'parse-duration';
 
 // repeated number + time unit
-export const durationExp = /^(\s*\d*\.?\d+\s*(ms|milliseconds?|s|seconds?|m|mins?|minutes?|h|hours?|d|days?))*$/;
+// 'm' for minute is allowed here
+export const durationExp = /^(\s*\d*\.?\d+\s*(ms|milliseconds?|s|seconds?|m|mins?|minutes?|h|hours?|d|days?)\s*)*$/;
 
 export const isDurationString =
   (v: any): v is string =>
