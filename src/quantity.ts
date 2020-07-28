@@ -59,6 +59,14 @@ const findGroup = (unit?: string): UnitGroup | null =>
     ? groups.find(g => g.test(unit)) ?? null
     : null;
 
+const checkCompatible = (qty1: JSONQuantity, qty2: JSONQuantity): void => {
+  const group1 = findGroup(qty1.unit)?.name;
+  const group2 = findGroup(qty2.unit)?.name;
+  if (group1 !== group2) {
+    throw new Error(`Incompatible units: '${qty1.unit}' vs. '${qty2.unit}'`);
+  }
+};
+
 const libUnit = (unit: string): string =>
   findGroup(unit)?.convert(unit) ?? unit;
 
@@ -71,11 +79,17 @@ const toLibQty = (v: JSONQuantity): LibQty => {
 
 export const isJSONQuantity =
   (obj: any): obj is JSONQuantity =>
-    isObject(obj) && '__bloxtype' in obj && !('toJSON' in obj);
+    obj != null
+    && typeof obj === 'object'
+    && obj.__bloxtype === 'Quantity'
+    && typeof obj.toJSON === 'undefined';
 
 export const isQuantity =
   (obj: any): obj is Quantity =>
-    isObject(obj) && '__bloxtype' in obj && 'toJSON' in obj;
+    obj != null
+    && typeof obj === 'object'
+    && obj.__bloxtype === 'Quantity'
+    && typeof obj.toJSON === 'function';
 
 const fromArgs =
   (value: number | null, unit: string): JSONQuantity => ({
@@ -99,7 +113,7 @@ const tryFromDuration =
       : null;
 
 export class Quantity implements JSONQuantity {
-  public __bloxtype: 'Quantity';
+  public __bloxtype: 'Quantity' = 'Quantity';
   public value: number | null;
   public unit: string;
   public readonly: boolean;
@@ -148,28 +162,39 @@ export class Quantity implements JSONQuantity {
     });
   }
 
+  public eq(value: WrapperValue, unit?: string): boolean {
+    const other = new Quantity(value, unit);
+    checkCompatible(this, other);
+    return toLibQty(this).eq(toLibQty(other));
+  }
+
   public lt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    checkCompatible(this, other);
     return toLibQty(this).lt(toLibQty(other));
   }
 
   public lte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    checkCompatible(this, other);
     return toLibQty(this).lte(toLibQty(other));
   }
 
   public gt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    checkCompatible(this, other);
     return toLibQty(this).gt(toLibQty(other));
   }
 
   public gte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    checkCompatible(this, other);
     return toLibQty(this).gte(toLibQty(other));
   }
 
   public compareTo(value: WrapperValue, unit?: string): -1 | 0 | 1 {
     const other = new Quantity(value, unit);
+    checkCompatible(this, other);
     return toLibQty(this).compareTo(toLibQty(other));
   }
 
@@ -190,23 +215,10 @@ export class Quantity implements JSONQuantity {
     return this.copy(result.scalar);
   }
 
-  public mul(value: WrapperValue, unit?: string): Quantity {
-    const other = new Quantity(value, unit);
-    const result = toLibQty(this).mul(toLibQty(other));
-    return this.copy(result.scalar);
-  }
-
-  public div(value: WrapperValue, unit?: string): Quantity {
-    const other = new Quantity(value, unit);
-    const result = toLibQty(this).div(toLibQty(other));
-    return this.copy(result.scalar);
-  }
-
   // Convenience aliases
+  public isEqualTo = this.eq;
   public isGreaterThan = this.gt;
   public isLessThan = this.lt;
-  public multiply = this.mul;
-  public divide = this.div;
 }
 
 export function qty(value: JSONQuantity): Quantity;

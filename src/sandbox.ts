@@ -85,6 +85,9 @@ export async function sandboxApi() {
   };
 }
 
+// Wrapping code in an async function lets scripts use await in top-level calls
+const promisify = (code: string) => `return (async () => {${code}})()`;
+
 export async function runIsolated(script: string): Promise<SandboxResult> {
   const sandbox = await sandboxApi();
 
@@ -97,7 +100,7 @@ export async function runIsolated(script: string): Promise<SandboxResult> {
   vm.on('console.log', sandbox.print);
 
   try {
-    const returnValue = sanitize(await vm.run(script));
+    const returnValue = sanitize(await vm.run(promisify(script)));
     return {
       date: new Date().getTime(),
       messages: sandbox.messages,

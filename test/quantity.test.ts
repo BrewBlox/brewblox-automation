@@ -1,6 +1,6 @@
 import LibQty from 'js-quantities';
 
-import { qty } from '../src/quantity';
+import { isJSONQuantity, isQuantity, qty } from '../src/quantity';
 import { JSONQuantity } from '../src/types';
 
 
@@ -11,6 +11,22 @@ const wrap = (value: number, unit: string): JSONQuantity => ({
 });
 
 describe('Check creating units', () => {
+
+  it('Should recognize quantities', () => {
+    expect(qty(10, 'degC').__bloxtype).toBe('Quantity');
+    expect(typeof qty(10, 'degC').toJSON).toBe('function');
+
+    expect(isQuantity(null)).toBe(false);
+    expect(isQuantity(10)).toBe(false);
+    expect(isQuantity(wrap(10, 'degC'))).toBe(false);
+    expect(isQuantity(qty(wrap(10, 'degC')))).toBe(true);
+    expect(isQuantity(qty(10, 'degC'))).toBe(true);
+
+    expect(isJSONQuantity(wrap(10, 'degC'))).toBe(true);
+    expect(isJSONQuantity(qty(wrap(10, 'degC')))).toBe(false);
+    expect(isJSONQuantity(10)).toBe(false);
+    expect(isJSONQuantity(qty(10, 'degC').toJSON())).toBe(true);
+  });
 
   it('Should recognize used unit types', () => {
     expect(LibQty(1, 'degC').isCompatible('degF')).toBe(true);
@@ -50,13 +66,14 @@ describe('Check manipulating quantities', () => {
     expect(qty(2, 'h').gt(100, 'mins')).toBe(true);
     expect(qty('1d8h').gt(10, 'd')).toBe(false);
     expect(qty('1d8h').isGreaterThan(10, 'd')).toBe(false);
+    expect(() => qty(10, 'degC').gt(10, 'delta_degC')).toThrow(/Incompatible units/);
   });
 
   it('Should calculate quantities', () => {
     expect(qty(100, 'degC').plus(10, 'delta_degC').value).toBe(110);
     expect(qty(100, 'degC').plus(10, 'delta_degF').value).toBeCloseTo(105.5555);
     expect(qty(100, 'degC').minus(10, 'delta_degF').value).toBeCloseTo(94.44444);
-    expect(qty(10, '1/degC').mul(2, '1/degC').value).toBe(20);
+    expect(() => qty(10, 'degC').plus(20, 'degC')).toThrow();
   });
 
   it('Should convert quantities', () => {
