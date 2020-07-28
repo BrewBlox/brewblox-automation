@@ -16,10 +16,10 @@ const handler: ActionHandler<TaskEditImpl> = {
 
   async apply({ impl }, { proc, activeStep }) {
     const { ref, title, message, status } = impl;
-    const existing: AutomationTask[] = !ref
-      ? undefined
-      : (await taskDb.fetchAll())
-        .filter(v => v.processId === proc.id && v.ref === ref);
+    const existing: AutomationTask[] = ref
+      ? (await taskDb.fetchAll())
+        .filter(v => v.processId === proc.id && v.ref === ref)
+      : [];
 
     for (const task of existing) {
       await taskDb.save({

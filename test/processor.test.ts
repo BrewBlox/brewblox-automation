@@ -1,4 +1,3 @@
-import last from 'lodash/last';
 import { v4 as uid } from 'uuid';
 
 import { getHandler } from '../src/handlers';
@@ -20,6 +19,12 @@ const mockGetHandler = (getHandler as jest.MockedFunction<any>);
 jest.mock('../src/handlers');
 
 type PartialResult = Partial<AutomationStepResult>;
+
+const pushResult = async (proc: AutomationProcess): Promise<AutomationStepResult | null> => {
+  const res = await nextUpdateResult(proc);
+  proc.results.push(res as AutomationStepResult);
+  return res;
+};
 
 describe('Generate next update results (happy flow)', () => {
   beforeEach(() => {
@@ -56,36 +61,31 @@ describe('Generate next update results (happy flow)', () => {
       results,
     };
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Created',
       status: 'Active',
     });
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Preconditions',
       status: 'Active',
     });
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Actions',
       status: 'Active',
     });
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Transitions',
       status: 'Active',
     });
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Finished',
       status: 'Finished',
@@ -125,20 +125,16 @@ describe('Generate next update results (happy flow)', () => {
       results,
     };
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Created',
       status: 'Active',
     });
 
     expect(mockPrepare.mock.calls.length).toBe(0);
-
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Preconditions',
       status: 'Active',
     });
-
 
     expect(mockPrepare.mock.calls.length).toBe(1);
     expect(mockPrepare.mock.calls[0]).toMatchObject([
@@ -150,8 +146,7 @@ describe('Generate next update results (happy flow)', () => {
       },
     ]);
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Actions',
       status: 'Active',
     });
@@ -195,16 +190,14 @@ describe('Generate next update results (happy flow)', () => {
       results,
     };
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Created',
       status: 'Active',
     });
 
     expect(mockPrepare.mock.calls.length).toBe(0);
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Preconditions',
       status: 'Active',
     });
@@ -219,8 +212,7 @@ describe('Generate next update results (happy flow)', () => {
       },
     ]);
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Actions',
       status: 'Active',
     });
@@ -228,8 +220,7 @@ describe('Generate next update results (happy flow)', () => {
     expect(mockCheck.mock.calls.length).toBe(0);
     expect(mockApply.mock.calls.length).toBe(0);
 
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Transitions',
       status: 'Active',
     });
@@ -295,41 +286,37 @@ describe('Generate next update results (happy flow)', () => {
       .mockReturnValue(true);
 
     // phase -> created
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> preconditions
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> actions
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> transitions
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Transitions',
       status: 'Active',
     });
 
     // empty transition restarted the step
-    results.push(await nextUpdateResult(proc));
-    expect(mockCheck.mock.calls.length).toBe(1);
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       stepId,
       phase: 'Created',
       status: 'Active',
     });
+    expect(mockCheck.mock.calls.length).toBe(1);
 
     // phase -> preconditions
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> actions
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> transitions
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Transitions',
       status: 'Active',
     });
 
     // check returns true again, full transition points towards proc end
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Finished',
       status: 'Finished',
     });
@@ -390,12 +377,11 @@ describe('Generate next update results (error flow)', () => {
     });
 
     // phase -> created
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> preconditions
-    results.push(await nextUpdateResult(proc));
+    await pushResult(proc);
     // phase -> preconditions (error)
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Preconditions',
       status: 'Active',
       error: 'Implementation not here. Go away.',
@@ -407,8 +393,7 @@ describe('Generate next update results (error flow)', () => {
     mockCheck.mockResolvedValue(true);
 
     // business as usual
-    results.push(await nextUpdateResult(proc));
-    expect(last(results)).toMatchObject<PartialResult>({
+    expect(await pushResult(proc)).toMatchObject<PartialResult>({
       phase: 'Actions',
       status: 'Active',
     });
