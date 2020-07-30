@@ -1,12 +1,12 @@
 import LibQty from 'js-quantities';
 import isFinite from 'lodash/isFinite';
-import isObject from 'lodash/isObject';
 
 import { durationMs, isDurationString } from './duration';
 import { JSONQuantity } from './types';
 
 
 type WrapperValue = JSONQuantity | number | string | null;
+type LoggerFunc = (...args: any[]) => void;
 
 interface UnitGroup {
   name: string;
@@ -117,6 +117,7 @@ export class Quantity implements JSONQuantity {
   public value: number | null;
   public unit: string;
   public readonly: boolean;
+  public logFunc: LoggerFunc = (() => { void 0; })
 
   public constructor(value: number | null, unit: string);
   public constructor(value: string); // duration
@@ -154,63 +155,78 @@ export class Quantity implements JSONQuantity {
     };
   }
 
+  public toString(): string {
+    return `qty(${this.value}, '${this.unit}')`;
+  }
+
   public copy(value?: number | null, unit?: string): Quantity {
-    return new Quantity({
+    const other = new Quantity({
       ...this.toJSON(),
       value: value !== undefined ? value : this.value, // null is valid
       unit: unit ?? this.unit,
     });
+    other.logFunc = this.logFunc;
+    return other;
   }
 
   public eq(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.eq(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).eq(toLibQty(other));
   }
 
   public lt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.lt(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).lt(toLibQty(other));
   }
 
   public lte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.lte(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).lte(toLibQty(other));
   }
 
   public gt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.gt(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).gt(toLibQty(other));
   }
 
   public gte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.gte(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).gte(toLibQty(other));
   }
 
   public compareTo(value: WrapperValue, unit?: string): -1 | 0 | 1 {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.compareTo(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).compareTo(toLibQty(other));
   }
 
   public to(unit: string): Quantity {
+    this.logFunc(`${this}.to('${unit}')`);
     const result = toLibQty(this).to(libUnit(unit));
     return this.copy(result.scalar, unit);
   }
 
   public plus(value: WrapperValue, unit?: string): Quantity {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.plus(${other})`);
     const result = toLibQty(this).add(toLibQty(other));
     return this.copy(result.scalar);
   }
 
   public minus(value: WrapperValue, unit?: string): Quantity {
     const other = new Quantity(value, unit);
+    this.logFunc(`${this}.minus(${other})`);
     const result = toLibQty(this).sub(toLibQty(other));
     return this.copy(result.scalar);
   }
@@ -227,4 +243,15 @@ export function qty(value: number | null, unit: string): Quantity;
 export function qty(value: WrapperValue, unit?: string): Quantity {
   // Let the constructor handle invalid combinations of args
   return new Quantity(value as any, unit as any);
+}
+
+// allows injecting a logger function into qty()
+// the logger will be passed to all copy instances
+export function qtyFactory(logFunc: LoggerFunc): typeof qty {
+  return (value: any, unit?: any): Quantity => {
+    const q = qty(value, unit);
+    q.logFunc = logFunc;
+    logFunc(q.toString());
+    return q;
+  };
 }
