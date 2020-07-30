@@ -1,6 +1,7 @@
 import LibQty from 'js-quantities';
 
-import { isJSONQuantity, isQuantity, qty } from '../src/quantity';
+import { isJSONQuantity } from '../src/bloxfield';
+import { isQuantity, qty } from '../src/quantity';
 import { JSONQuantity } from '../src/types';
 
 
@@ -22,9 +23,9 @@ describe('Check creating units', () => {
     expect(isQuantity(qty(wrap(10, 'degC')))).toBe(true);
     expect(isQuantity(qty(10, 'degC'))).toBe(true);
 
-    expect(isJSONQuantity(wrap(10, 'degC'))).toBe(true);
-    expect(isJSONQuantity(qty(wrap(10, 'degC')))).toBe(false);
     expect(isJSONQuantity(10)).toBe(false);
+    expect(isJSONQuantity(wrap(10, 'degC'))).toBe(true);
+    expect(isJSONQuantity(qty(wrap(10, 'degC')))).toBe(true);
     expect(isJSONQuantity(qty(10, 'degC').toJSON())).toBe(true);
   });
 

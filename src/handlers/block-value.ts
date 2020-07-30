@@ -1,10 +1,8 @@
-import isNumber from 'lodash/isNumber';
-import isObject from 'lodash/isObject';
-import round from 'lodash/round';
-
+import { isJSONLink, isJSONQuantity } from '../bloxfield';
 import { eventbus } from '../eventbus';
-import { isJSONQuantity } from '../quantity';
-import { BlockValueImpl, JSONLink } from '../types';
+import { parseBloxField } from '../postfixed';
+import { toLibQty } from '../quantity';
+import { BlockValueImpl } from '../types';
 import { ConditionHandler } from './types';
 
 const compare: Record<BlockValueImpl['operator'], ((v1: any, v2: any) => boolean)> = {
@@ -16,12 +14,11 @@ const compare: Record<BlockValueImpl['operator'], ((v1: any, v2: any) => boolean
   'gt': (v1, v2) => v1 > v2,
 };
 
-const isJSONLink = (obj: any): obj is JSONLink =>
-  isObject(obj) && (obj as JSONLink).__bloxtype === 'Link';
-
-const resolveMeta = (obj: any): any => {
+const resolveField = (obj: any): any => {
   if (isJSONQuantity(obj)) {
-    return obj.value;
+    return obj.value != null
+      ? toLibQty(obj).toBase().scalar
+      : obj.value;
   }
   if (isJSONLink(obj)) {
     return obj.id;
@@ -54,17 +51,15 @@ const handler: ConditionHandler<BlockValueImpl> = {
       throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when checking ${title}`);
     }
 
-    const key = impl.key?.replace(/[\[<].*$/, '') ?? ''; // strip postfix
-    let actual = resolveMeta(block.data[key]);
-    let desired = resolveMeta(impl.value);
+    const implK = impl.key ?? '';
+    const implV = impl.value;
+    const [key, value] = parseBloxField(implK, implV) ?? [implK, implV];
+
+    const actual = resolveField(block.data[key]);
+    const desired = resolveField(value);
 
     if (actual === undefined || desired === undefined) {
       return false;
-    }
-
-    if (isNumber(actual) && isNumber(desired)) {
-      actual = round(actual, 2);
-      desired = round(desired, 2);
     }
 
     return compare[impl.operator](actual, desired);
