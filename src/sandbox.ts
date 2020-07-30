@@ -1,5 +1,4 @@
 import axios from 'axios';
-import find from 'lodash/find';
 import isArray from 'lodash/isArray';
 import isBoolean from 'lodash/isBoolean';
 import isNumber from 'lodash/isNumber';
@@ -10,10 +9,10 @@ import { NodeVM } from 'vm2';
 import { eventbus } from './eventbus';
 import { qtyFactory } from './quantity';
 import { SandboxResult } from './shared-types';
-import { Block } from './types';
+import { Block, CacheMessage } from './types';
 
 
-const checks: ((v: any) => boolean)[] = [
+const simpleTypeChecks: ((v: any) => boolean)[] = [
   v => v == null,
   isString,
   isNumber,
@@ -23,12 +22,9 @@ const checks: ((v: any) => boolean)[] = [
 ];
 
 const simpleValue = (val: any) =>
-  checks.some(f => f(val))
+  simpleTypeChecks.some(f => f(val))
     ? val
     : `[${typeof val}]`;
-
-const stripPostfix = (v: string): string =>
-  v.replace(/(\[.+\]|<.+>)$/, '');
 
 export function sanitize(values: any, parse = true): any {
   const serialized = JSON.stringify(values ?? null, (_, v) => simpleValue(v));
@@ -37,11 +33,8 @@ export function sanitize(values: any, parse = true): any {
 
 export async function sandboxApi() {
   const messages: any[] = [];
-  const blocks: Block[] = eventbus
-    .getSparks()
-    .map(serviceId => eventbus.getBlocks(serviceId))
-    .map(v => sanitize(v))
-    .flat(1);
+  const blocks: Block[] = sanitize(eventbus.getBlocks());
+  const events: CacheMessage[] = sanitize(eventbus.getAllCached());
 
   const findBlock = (serviceId: string, blockId: string): Block | null => {
     return blocks.find(v => v.serviceId === serviceId && v.id === blockId) ?? null;
@@ -57,6 +50,7 @@ export async function sandboxApi() {
     blocks,
     print,
     axios,
+    events,
     qty: qtyFactory(print),
     getBlock(serviceId: string, blockId: string): Block | null {
       const block = findBlock(serviceId, blockId);
@@ -64,8 +58,7 @@ export async function sandboxApi() {
       return block;
     },
     getBlockField(serviceId: string, blockId: string, field: string): any | null {
-      const data = findBlock(serviceId, blockId)?.data ?? {};
-      const value = find(data, (_, k) => field === k || field === stripPostfix(k)) ?? null;
+      const value = findBlock(serviceId, blockId)?.data[field] ?? null;
       print(`getField('${serviceId}', '${blockId}', '${field}')`, value);
       return value;
     },

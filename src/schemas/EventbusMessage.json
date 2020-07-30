@@ -1,22 +1,47 @@
 {
-  "type": "object",
-  "properties": {
-    "key": {
-      "type": "string"
+  "anyOf": [
+    {
+      "$ref": "#/definitions/EventbusStateMessage"
     },
-    "type": {
-      "type": "string"
-    },
-    "ttl": {
-      "type": "string"
-    },
-    "data": {}
-  },
-  "required": [
-    "data",
-    "key",
-    "ttl",
-    "type"
+    {
+      "$ref": "#/definitions/EventbusHistoryMessage"
+    }
   ],
+  "definitions": {
+    "EventbusStateMessage": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "ttl": {
+          "type": "string"
+        },
+        "data": {}
+      },
+      "required": [
+        "data",
+        "key",
+        "ttl",
+        "type"
+      ]
+    },
+    "EventbusHistoryMessage": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "data": {}
+      },
+      "required": [
+        "data",
+        "key"
+      ]
+    }
+  },
   "$schema": "http://json-schema.org/draft-07/schema#"
 }
