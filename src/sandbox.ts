@@ -8,7 +8,7 @@ import isString from 'lodash/isString';
 import { NodeVM } from 'vm2';
 
 import { eventbus } from './eventbus';
-import { qty } from './quantity';
+import { qtyFactory } from './quantity';
 import { SandboxResult } from './shared-types';
 import { Block } from './types';
 
@@ -57,7 +57,7 @@ export async function sandboxApi() {
     blocks,
     print,
     axios,
-    qty,
+    qty: qtyFactory(print),
     getBlock(serviceId: string, blockId: string): Block | null {
       const block = findBlock(serviceId, blockId);
       print(`getBlock('${serviceId}', '${blockId}')`, block);
@@ -86,6 +86,7 @@ export async function sandboxApi() {
 }
 
 // Wrapping code in an async function lets scripts use await in top-level calls
+// Intentionally kept as oneliner to avoid breaking line refs in error messages
 const promisify = (code: string) => `return (async () => {${code}})()`;
 
 export async function runIsolated(script: string): Promise<SandboxResult> {
