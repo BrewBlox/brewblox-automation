@@ -45,14 +45,18 @@ export interface AutomationStateMessage extends EventbusMessage {
   }
 }
 
-export interface JSONQuantity {
+export interface JSONBloxField {
+  __bloxtype: string;
+}
+
+export interface JSONQuantity extends JSONBloxField {
   __bloxtype: 'Quantity';
   value: number | null;
   unit: string;
   readonly?: boolean;
 }
 
-export interface JSONLink {
+export interface JSONLink extends JSONBloxField {
   __bloxtype: 'Link';
   id: string | null;
   type: string;

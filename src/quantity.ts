@@ -1,6 +1,7 @@
 import LibQty from 'js-quantities';
 import isFinite from 'lodash/isFinite';
 
+import { isJSONQuantity } from './bloxfield';
 import { durationMs, isDurationString } from './duration';
 import { JSONQuantity } from './types';
 
@@ -70,19 +71,12 @@ const checkCompatible = (qty1: JSONQuantity, qty2: JSONQuantity): void => {
 const libUnit = (unit: string): string =>
   findGroup(unit)?.convert(unit) ?? unit;
 
-const toLibQty = (v: JSONQuantity): LibQty => {
+export const toLibQty = (v: JSONQuantity): LibQty => {
   if (v.value == null) {
     throw new Error('No value set');
   }
   return LibQty(v.value, libUnit(v.unit)!);
 };
-
-export const isJSONQuantity =
-  (obj: any): obj is JSONQuantity =>
-    obj != null
-    && typeof obj === 'object'
-    && obj.__bloxtype === 'Quantity'
-    && typeof obj.toJSON === 'undefined';
 
 export const isQuantity =
   (obj: any): obj is Quantity =>
