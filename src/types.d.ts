@@ -5,14 +5,24 @@
 export * from './shared-types';
 import { AutomationProcess, AutomationStep, AutomationStepResult, AutomationTask } from './shared-types';
 
-export interface EventbusMessage {
+export interface EventbusStateMessage {
   key: string;
   type: string;
   ttl: string;
   data: any;
 }
 
-export interface CachedMessage extends EventbusMessage {
+export interface EventbusHistoryMessage {
+  key: string;
+  data: any;
+}
+
+export type EventbusMessage =
+  | EventbusStateMessage
+  | EventbusHistoryMessage
+
+export type CacheMessage<T extends EventbusMessage = EventbusMessage> = T & {
+  topic: string;
   received: number;
 }
 
@@ -31,14 +41,14 @@ export interface HandlerOpts {
   activeResult: AutomationStepResult;
 }
 
-export interface SparkStateMessage extends EventbusMessage {
+export interface SparkStateMessage extends EventbusStateMessage {
   data: {
     service: any;
     blocks: Block[];
   }
 }
 
-export interface AutomationStateMessage extends EventbusMessage {
+export interface AutomationStateMessage extends EventbusStateMessage {
   data: {
     processes: AutomationProcess[];
     tasks: AutomationTask[];
