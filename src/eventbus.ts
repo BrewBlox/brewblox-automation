@@ -26,8 +26,7 @@ const stateMessage = (data: AutomationStateMessage['data']): AutomationStateMess
 });
 
 const isStateMessage = (obj: EventbusMessage): obj is EventbusStateMessage =>
-  obj != null
-  && typeof obj === 'object'
+  obj instanceof Object
   && 'type' in obj;
 
 const isExpired = (msg: CacheMessage): boolean =>

@@ -80,25 +80,23 @@ export const toLibQty = (v: JSONQuantity): LibQty => {
 
 export const isQuantity =
   (obj: any): obj is Quantity =>
-    obj != null
-    && typeof obj === 'object'
+    obj instanceof Object
     && obj.__bloxtype === 'Quantity'
     && typeof obj.toJSON === 'function';
 
 const fromArgs =
-  (value: number | null, unit: string): JSONQuantity => ({
+  (value: number | null, unit: string, readonly?: boolean): JSONQuantity => ({
     __bloxtype: 'Quantity',
     value,
     unit,
+    readonly,
   });
 
-const tryFromJSON =
+const tryFromQuantity =
   (value: any): JSONQuantity | null =>
-    isQuantity(value)
-      ? value.toJSON()
-      : isJSONQuantity(value)
-        ? { ...value }
-        : null;
+    isJSONQuantity(value)
+      ? fromArgs(value.value, value.unit, value.readonly)
+      : null;
 
 const tryFromDuration =
   (value: any): JSONQuantity | null =>
@@ -119,7 +117,7 @@ export class Quantity implements JSONQuantity {
   public constructor(value: WrapperValue, unit?: string);
   public constructor(value: WrapperValue, unit?: string) {
     const obj: JSONQuantity = null
-      ?? tryFromJSON(value)
+      ?? tryFromQuantity(value)
       ?? tryFromDuration(value)
       ?? fromArgs(value as number, unit as string);
 
