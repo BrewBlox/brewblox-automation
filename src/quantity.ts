@@ -1,72 +1,22 @@
 import LibQty from 'js-quantities';
 import isFinite from 'lodash/isFinite';
+import lodashRound from 'lodash/round';
 
 import { isJSONQuantity } from './bloxfield';
 import { durationMs, isDurationString } from './duration';
 import { JSONQuantity } from './types';
-
+import { checkCompatible, findGroup } from './unit-groups';
 
 type WrapperValue = JSONQuantity | number | string | null;
 type LoggerFunc = (...args: any[]) => void;
-
-interface UnitGroup {
-  name: string;
-  example: string;
-  test: (s: string) => boolean;
-  convert: (s: string) => string;
+interface HasLogger {
+  logFunc: LoggerFunc;
 }
 
-const groups: UnitGroup[] = [
-  {
-    name: 'Time',
-    example: 'second',
-    test: s => /^(ms|milliseconds?|s|seconds?|mins?|minutes?|h|hours?|d|days?)$/.test(s),
-    convert: s => s,
-  },
-  {
-    name: 'Temp',
-    example: 'degC',
-    test: s => /^deg(F|C)$/i.test(s),
-    convert: s => s.replace('deg', 'temp'),
-  },
-  {
-    name: 'Delta Temp',
-    example: 'delta_degC',
-    test: s => /^delta_deg(F|C)$/i.test(s),
-    convert: s => s.replace('delta_', ''),
-  },
-  {
-    name: 'Inverse Temp',
-    example: '1 / degC',
-    test: s => /^1 ?\/ ?deg(F|C)$/i.test(s),
-    convert: s => s,
-  },
-  {
-    name: 'Delta Temp / Time',
-    example: 'delta_degC / second',
-    test: s => /^delta_deg(F|C) ?\/ ?(s|seconds?|mins?|minutes?|h|hours?|d|days?)$/i.test(s),
-    convert: s => s.replace('delta_', ''),
-  },
-  {
-    name: 'Delta Temp * Time',
-    example: 'delta_degC * second',
-    test: s => /^delta_deg(F|C) ?\* ?(s|seconds?|mins?|minutes?|h|hours?|d|days?)$/i.test(s),
-    convert: s => s.replace('delta_', ''),
-  },
-];
-
-const findGroup = (unit?: string): UnitGroup | null =>
-  unit
-    ? groups.find(g => g.test(unit)) ?? null
+const round = (value: number | null, precision = 3): number | null =>
+  value !== null
+    ? lodashRound(value, precision)
     : null;
-
-const checkCompatible = (qty1: JSONQuantity, qty2: JSONQuantity): void => {
-  const group1 = findGroup(qty1.unit)?.name;
-  const group2 = findGroup(qty2.unit)?.name;
-  if (group1 !== group2) {
-    throw new Error(`Incompatible units: '${qty1.unit}' vs. '${qty2.unit}'`);
-  }
-};
 
 const libUnit = (unit: string): string =>
   findGroup(unit)?.convert(unit) ?? unit;
@@ -104,7 +54,47 @@ const tryFromDuration =
       ? fromArgs(durationMs(value) / 1000, 's')
       : null;
 
-export class Quantity implements JSONQuantity {
+const rawQty = (value: WrapperValue, unit?: string): JSONQuantity =>
+  null
+  ?? tryFromQuantity(value)
+  ?? tryFromDuration(value)
+  ?? fromArgs(value as number, unit as string);
+
+const qtyArgFormatter = (value: WrapperValue, unit?: string): string => {
+  const q = rawQty(value, unit);
+  return `${round(q.value)}, '${q.unit}'`;
+};
+
+/**
+ * Function decorator to take care of boilerplate involved in logging a call.
+ * The wrapper function calls the wrappee, and then logs a formatted description of args + result.
+ * If wrappee throws an error, it is caught, logged, and rethrown.
+ * A formatter for the function arguments must be provided.
+ *
+ * @param argFormatter is called with decorated function arguments to handle string formatting.
+ */
+function logged(argFormatter: ((...args: any[]) => string)) {
+  return function (target: HasLogger, name: string, desc: PropertyDescriptor): PropertyDescriptor {
+    const func: Function = desc.value;
+
+    // declared as function(){} to use call-site 'this'
+    desc.value = function (...args: any[]) {
+      const callStr = `${this}.${name}(${argFormatter(...args)})`;
+      try {
+        const result = func.apply(this, args);
+        this.logFunc(callStr, result);
+        return result;
+      }
+      catch (e) {
+        this.logFunc(callStr, `${e}`);
+        throw e;
+      }
+    };
+    return desc;
+  };
+}
+
+export class Quantity implements JSONQuantity, HasLogger {
   public __bloxtype: 'Quantity' = 'Quantity';
   public value: number | null;
   public unit: string;
@@ -116,10 +106,7 @@ export class Quantity implements JSONQuantity {
   public constructor(value: JSONQuantity);
   public constructor(value: WrapperValue, unit?: string);
   public constructor(value: WrapperValue, unit?: string) {
-    const obj: JSONQuantity = null
-      ?? tryFromQuantity(value)
-      ?? tryFromDuration(value)
-      ?? fromArgs(value as number, unit as string);
+    const obj = rawQty(value, unit);
 
     if (obj.value && !isFinite(obj.value)) {
       throw new Error(`Value '${obj.value}' is not a number or null. (unit=${obj.unit}).`);
@@ -148,7 +135,7 @@ export class Quantity implements JSONQuantity {
   }
 
   public toString(): string {
-    return `qty(${this.value}, '${this.unit}')`;
+    return `qty(${round(this.value)}, '${this.unit}')`;
   }
 
   public copy(value?: number | null, unit?: string): Quantity {
@@ -161,64 +148,64 @@ export class Quantity implements JSONQuantity {
     return other;
   }
 
+  @logged(v => `'${v}'`)
+  public to(unit: string): Quantity {
+    const converted = toLibQty(this).to(libUnit(unit));
+    return this.copy(converted.scalar, unit);
+  }
+
+  @logged(qtyArgFormatter)
   public eq(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.eq(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).eq(toLibQty(other));
   }
 
+  @logged(qtyArgFormatter)
   public lt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.lt(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).lt(toLibQty(other));
   }
 
+  @logged(qtyArgFormatter)
   public lte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.lte(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).lte(toLibQty(other));
   }
 
+  @logged(qtyArgFormatter)
   public gt(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.gt(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).gt(toLibQty(other));
   }
 
+  @logged(qtyArgFormatter)
   public gte(value: WrapperValue, unit?: string): boolean {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.gte(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).gte(toLibQty(other));
   }
 
+  @logged(qtyArgFormatter)
   public compareTo(value: WrapperValue, unit?: string): -1 | 0 | 1 {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.compareTo(${other})`);
     checkCompatible(this, other);
     return toLibQty(this).compareTo(toLibQty(other));
   }
 
-  public to(unit: string): Quantity {
-    this.logFunc(`${this}.to('${unit}')`);
-    const result = toLibQty(this).to(libUnit(unit));
-    return this.copy(result.scalar, unit);
-  }
-
+  @logged(qtyArgFormatter)
   public plus(value: WrapperValue, unit?: string): Quantity {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.plus(${other})`);
     const result = toLibQty(this).add(toLibQty(other));
     return this.copy(result.scalar);
   }
 
+  @logged(qtyArgFormatter)
   public minus(value: WrapperValue, unit?: string): Quantity {
     const other = new Quantity(value, unit);
-    this.logFunc(`${this}.minus(${other})`);
     const result = toLibQty(this).sub(toLibQty(other));
     return this.copy(result.scalar);
   }
@@ -243,7 +230,6 @@ export function qtyFactory(logFunc: LoggerFunc): typeof qty {
   return (value: any, unit?: any): Quantity => {
     const q = qty(value, unit);
     q.logFunc = logFunc;
-    logFunc(q.toString());
     return q;
   };
 }
