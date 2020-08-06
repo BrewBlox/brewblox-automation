@@ -24,23 +24,25 @@ export class DatabaseClient {
   }
 
   public connect(): void {
-    if (!this.local) {
-      this.remoteDb = new PouchDB(`http://${args.database}:5984/${name}`);
-      logger.info('Starting database sync: ' + this.remoteDb.name);
-      this.localDb
-        .sync(this.remoteDb, { live: true, retry: true })
-        .on('active', () => logger.info(`${name}: sync active`))
-        .on('complete', () => logger.info(`${name}: sync ended`))
-        .on('error', (err) => logger.info(`${name}: sync error ${err}`));
-      this.checkRemote();
+    if (this.local) {
+      logger.info('Local mode: skipping database sync');
+      return;
     }
+    this.remoteDb = new PouchDB(`http://${args.database}:5984/${name}`);
+    logger.info('Starting database sync: ' + this.remoteDb.name);
+    this.localDb
+      .sync(this.remoteDb, { live: true, retry: true })
+      .on('active', () => logger.info(`database sync active: ${name}`))
+      .on('complete', () => logger.info(`database sync end: ${name}`))
+      .on('error', (err) => logger.info(`database sync error: ${name} ${err}`));
+    this.checkRemote();
   }
 
   private async checkRemote() {
     try {
       await this.remoteDb!.info();
     } catch (e) {
-      logger.warn(`Failed to check remote DB: ${e.message}`);
+      logger.warn(`Remote database not yet online: ${e.message}`);
     }
   }
 

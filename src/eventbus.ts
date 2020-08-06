@@ -63,7 +63,7 @@ export class EventbusClient {
       .flat(1);
   }
 
-  public async connect(): Promise<void> {
+  public connect(): void {
     const emptyMessage = stateMessage({ processes: [], tasks: [] });
     const opts: mqtt.IClientOptions = {
       protocol: 'mqtt',
@@ -81,6 +81,7 @@ export class EventbusClient {
       logger.error(`mqtt error: ${e}`);
     });
     this.client.on('connect', () => {
+      logger.info('Eventbus connected');
       this.client?.subscribe(historyTopic + '/#');
       this.client?.subscribe(stateTopic + '/#');
     });

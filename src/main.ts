@@ -12,6 +12,6 @@ eventbus.connect();
 processor.start();
 
 app.listen(args.port, () => {
-  logger.info(`App is running at http://0.0.0.0:${args.port}`);
+  logger.info(`App is running at http://0.0.0.0:${args.port}/${args.name}`);
 });
 
