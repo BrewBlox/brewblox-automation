@@ -7,7 +7,7 @@ const settings: PartialArgs = {
   strictNullChecks: false,
 };
 
-const program = getProgramFromFiles([resolve('./src/types.d.ts')]);
+const program = getProgramFromFiles([resolve('./src/types/index.ts')]);
 
 const types = [
   'AutomationProcess',

@@ -1,5 +1,4 @@
-import { DateTime } from '../shared-types';
-import { TimeElapsedImpl } from '../types';
+import { DateTime, TimeElapsedImpl } from '../types';
 import { ConditionHandler } from './types';
 
 const ms = (date: DateTime): number => new Date(date).getTime();

@@ -6,7 +6,13 @@ import { v4 as uid } from 'uuid';
 import { processDb, taskDb } from '../database';
 import logger from '../logger';
 import { processor } from '../processor';
-import { AutomationProcess, AutomationStepJump, AutomationTemplate, AutomationTransition, UUID } from '../shared-types';
+import {
+  AutomationProcess,
+  AutomationStepJump,
+  AutomationTemplate,
+  AutomationTransition,
+  UUID,
+} from '../types';
 import { errorText, validateJump, validateTemplate } from '../validation';
 
 const validateTemplateBody: Middleware = async (ctx, next) => {

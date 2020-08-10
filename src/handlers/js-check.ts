@@ -13,10 +13,11 @@ const handler: ConditionHandler<JSCheckImpl> = {
   },
 
   async check({ impl }) {
-    const retv = await runIsolated(impl.body);
+    const result = await runIsolated(impl.body);
+
     // Very strict equality check
     // truthy objects such as {} or 'false' must not evaluate true
-    return retv.returnValue === true;
+    return result.returnValue === true;
   },
 };
 

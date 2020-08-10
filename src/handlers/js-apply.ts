@@ -1,5 +1,5 @@
 import { runIsolated } from '../sandbox';
-import { JSApplyImpl } from '../shared-types';
+import { JSApplyImpl } from '../types';
 import { ActionHandler } from './types';
 
 /**

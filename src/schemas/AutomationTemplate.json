@@ -241,6 +241,9 @@
         "ref": {
           "type": "string"
         },
+        "status": {
+          "$ref": "#/definitions/AutomationStatus"
+        },
         "resetStatus": {
           "anyOf": [
             {
@@ -259,9 +262,6 @@
               "type": "null"
             }
           ]
-        },
-        "status": {
-          "$ref": "#/definitions/AutomationStatus"
         }
       },
       "required": [
