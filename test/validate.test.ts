@@ -1,7 +1,7 @@
 import { v4 as uid } from 'uuid';
 
 import { AutomationProcess, AutomationTask } from '../src/types';
-import { lastErrors, validateProcess, validateTask } from '../src/validation';
+import { lastErrors, schemas, validate } from '../src/validation';
 
 describe('object validation', () => {
   it('should validate tasks', () => {
@@ -16,9 +16,11 @@ describe('object validation', () => {
       createdBy: 'User',
     };
 
-    expect(validateTask(task)).toBe(true);
-    expect(validateTask({} as any)).toBe(false);
-    expect(validateTask({ ...task, extra: true } as any)).toBe(true);
+    const schema = schemas.AutomationTask;
+
+    expect(validate(schema, task)).toBe(true);
+    expect(validate(schema, {} as any)).toBe(false);
+    expect(validate(schema, { ...task, extra: true } as any)).toBe(true);
   });
 
   it('should validate processes', () => {
@@ -89,10 +91,12 @@ describe('object validation', () => {
       }],
     };
 
-    validateProcess(proc);
+    const schema = schemas.AutomationProcess;
+
+    validate(schema, proc);
     expect(lastErrors()).toEqual([]);
-    expect(validateProcess(proc)).toBe(true);
-    expect(validateProcess({} as any)).toBe(false);
-    expect(validateProcess({ ...proc, extra: true } as any)).toBe(true);
+    expect(validate(schema, proc)).toBe(true);
+    expect(validate(schema, {} as any)).toBe(false);
+    expect(validate(schema, { ...proc, extra: true } as any)).toBe(true);
   });
 });

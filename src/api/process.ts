@@ -13,29 +13,10 @@ import {
   AutomationTransition,
   UUID,
 } from '../types';
-import { errorText, validateJump, validateTemplate } from '../validation';
+import { schemas, validatorMiddleware } from '../validation';
 
-const validateTemplateBody: Middleware = async (ctx, next) => {
-  if (!validateTemplate(ctx.request.body)) {
-    const message = errorText();
-    logger.error(message);
-    logger.debug('%o', ctx.request.body);
-    ctx.throw(422, message);
-  }
-  await next();
-};
-
-const validateJumpBody: Middleware = async (ctx, next) => {
-  if (!validateJump(ctx.request.body)) {
-    const message = errorText();
-    logger.error(message);
-    logger.debug('%o', ctx.request.body);
-    ctx.throw(422, message);
-  }
-  await next();
-};
-
-const router = new Router();
+const validateJumpBody = validatorMiddleware(schemas.AutomationStepJump);
+const validateTemplateBody = validatorMiddleware(schemas.AutomationTemplate);
 
 const replaceId = <T extends { id: UUID }>(obj: T): T => ({ ...obj, id: uid() });
 
@@ -86,6 +67,8 @@ export const createProcess: Middleware = async (ctx, next) => {
   }
   await next();
 };
+
+const router = new Router();
 
 router.get('/all', async (ctx) => {
   ctx.body = await processDb.fetchAll();
