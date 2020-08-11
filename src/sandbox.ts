@@ -8,8 +8,7 @@ import { NodeVM } from 'vm2';
 
 import { eventbus } from './eventbus';
 import { qtyFactory } from './quantity';
-import { SandboxResult } from './shared-types';
-import { Block, CacheMessage } from './types';
+import { Block, CacheMessage, SandboxResult } from './types';
 
 
 const simpleTypeChecks: ((v: any) => boolean)[] = [

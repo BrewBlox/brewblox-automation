@@ -12,7 +12,7 @@ import {
   EventbusMessage,
   EventbusStateMessage,
 } from './types';
-import { errorText, validateMessage } from './validation';
+import { errorText, schemas, validate } from './validation';
 
 const historyTopic = 'brewcast/history';
 const stateTopic = 'brewcast/state';
@@ -96,7 +96,7 @@ export class EventbusClient {
     if (topic === publishTopic) {
       return; // Skip messages published by this service
     }
-    if (!validateMessage(message)) {
+    if (!validate(schemas.EventbusMessage, message)) {
       logger.warn(`Discarded eventbus message from '${topic}'`);
       logger.warn(errorText());
       return;

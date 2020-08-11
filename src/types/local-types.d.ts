@@ -2,8 +2,12 @@
 // Local
 ////////////////////////////////////////////////////////////////
 
-export * from './shared-types';
-import { AutomationProcess, AutomationStep, AutomationStepResult, AutomationTask } from './shared-types';
+import {
+  AutomationProcess,
+  AutomationStep,
+  AutomationStepResult,
+  AutomationTask,
+} from './shared-types';
 
 export interface EventbusStateMessage {
   key: string;
