@@ -20,7 +20,8 @@ axios
   .use(
     (response) => response,
     (e) => {
-      const err = JSON.stringify(get(e, 'response.data', e.message ?? null));
+      const resp = get(e, 'response.data', e.message ?? null);
+      const err = (resp instanceof Object) ? JSON.stringify(resp) : resp;
       const url = get(e, 'response.config.url');
       const method = get(e, 'response.config.method');
       const status = get(e, 'response.status');
