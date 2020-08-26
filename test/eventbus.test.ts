@@ -18,13 +18,13 @@ describe('Eventbus message parsing', () => {
   const callbacks: { [key: string]: Function } = {};
   const mockClient = {
     on: jest.fn((n, cb) => callbacks[n] = cb),
-    publish: jest.fn(),
+    publishActive: jest.fn(),
     subscribe: jest.fn(),
   };
   _mqtt.connect.mockReturnValue(mockClient);
 
-  const send = (msg: EventbusMessage) =>
-    callbacks.message('brewcast/state', Buffer.from(JSON.stringify(msg)));
+  const send = (msg: EventbusMessage, topic = 'brewcast/state') =>
+    callbacks.message(topic, Buffer.from(JSON.stringify(msg)));
 
   it('should handle messages', async () => {
     const client = new EventbusClient();
@@ -34,7 +34,7 @@ describe('Eventbus message parsing', () => {
 
     expect(mockClient.subscribe.mock.calls.length).toBe(0);
     callbacks.connect();
-    expect(mockClient.subscribe.mock.calls.length).toBe(1);
+    expect(mockClient.subscribe.mock.calls.length).toBe(2);
 
     send({
       key: 'test',
@@ -42,23 +42,14 @@ describe('Eventbus message parsing', () => {
       ttl: '10m',
       data: { grid: true },
     });
-    expect(client.getCached('test', 'gridnodes')).toMatchObject({ grid: true });
+    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
 
     // Invalid messages are discarded
     send({
       key: 'test',
       type: 'gridnodes',
     } as any);
-    expect(client.getCached('test', 'gridnodes')).toMatchObject({ grid: true });
-
-    send({
-      key: 'test',
-      type: 'graphnodes',
-      ttl: '10m',
-      data: { graph: true },
-    });
-    expect(client.getCached('test', 'gridnodes')).toMatchObject({ grid: true });
-    expect(client.getCached('test', 'graphnodes')).toMatchObject({ graph: true });
+    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
 
     // Messages originating from automation are ignored
     send({
@@ -66,8 +57,8 @@ describe('Eventbus message parsing', () => {
       type: 'recursive',
       ttl: '10m',
       data: { recursive: 'this.recursive' },
-    });
-    expect(client.getCached('automation', 'recursive')).toBe(null);
+    }, 'brewcast/state/automation');
+    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
 
     // getBlocks should default to empty list
     expect(client.getBlocks('sparkey')).toEqual([]);

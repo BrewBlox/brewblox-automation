@@ -1,7 +1,7 @@
-import isNumber from 'lodash/isNumber';
-import round from 'lodash/round';
-
+import { isJSONLink, isJSONQuantity } from '../bloxfield';
 import { eventbus } from '../eventbus';
+import { parseBloxField } from '../postfixed';
+import { toLibQty } from '../quantity';
 import { BlockValueImpl } from '../types';
 import { ConditionHandler } from './types';
 
@@ -12,6 +12,18 @@ const compare: Record<BlockValueImpl['operator'], ((v1: any, v2: any) => boolean
   'ne': (v1, v2) => v1 !== v2,
   'ge': (v1, v2) => v1 >= v2,
   'gt': (v1, v2) => v1 > v2,
+};
+
+const resolveField = (obj: any): any => {
+  if (isJSONQuantity(obj)) {
+    return obj.value != null
+      ? toLibQty(obj).toBase().scalar
+      : obj.value;
+  }
+  if (isJSONLink(obj)) {
+    return obj.id;
+  }
+  return obj;
 };
 
 /**
@@ -39,16 +51,15 @@ const handler: ConditionHandler<BlockValueImpl> = {
       throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when checking ${title}`);
     }
 
-    let actual = block.data[impl.key];
-    let desired = impl.value;
+    const implK = impl.key ?? '';
+    const implV = impl.value;
+    const [key, value] = parseBloxField(implK, implV) ?? [implK, implV];
+
+    const actual = resolveField(block.data[key]);
+    const desired = resolveField(value);
 
     if (actual === undefined || desired === undefined) {
       return false;
-    }
-
-    if (isNumber(actual) && isNumber(desired)) {
-      actual = round(actual, 2);
-      desired = round(desired, 2);
     }
 
     return compare[impl.operator](actual, desired);

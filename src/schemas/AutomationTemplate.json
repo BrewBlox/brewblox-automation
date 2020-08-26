@@ -3,11 +3,9 @@
   "type": "object",
   "properties": {
     "title": {
-      "description": "Human-readable name.",
       "type": "string"
     },
     "steps": {
-      "description": "Step objects.\nThe process always starts at the first step.\nBy default, steps are visited in listed order.\nTransitions may override this behavior.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AutomationStep"
@@ -18,7 +16,6 @@
       "type": "string"
     },
     "_rev": {
-      "description": "Is defined by the datastore when object is first created.\nObjects with a _rev can't be created.\nObjects without a _rev can't be saved or removed.",
       "type": "string"
     }
   },
@@ -37,25 +34,21 @@
           "type": "string"
         },
         "title": {
-          "description": "Human-readable name.",
           "type": "string"
         },
         "preconditions": {
-          "description": "Preconditions must evaluate true before actions are applied.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
           }
         },
         "actions": {
-          "description": "Actions are applied in order.\nIf any action fails, all are retried.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationAction<ActionImpl>"
           }
         },
         "transitions": {
-          "description": "Transitions are checked in order.\nThe first transition to evaluate true gets to pick the next step.\nIf no transitions are set, the process immediates continues to the next step.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/AutomationTransition"
@@ -71,7 +64,6 @@
       ]
     },
     "AutomationCondition<ConditionImpl>": {
-      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
       "type": "object",
       "properties": {
         "id": {
@@ -93,6 +85,9 @@
             },
             {
               "$ref": "#/definitions/BlockValueImpl"
+            },
+            {
+              "$ref": "#/definitions/JSCheckImpl"
             },
             {
               "$ref": "#/definitions/TaskStatusImpl"
@@ -118,8 +113,8 @@
           ]
         },
         "time": {
-          "description": "Desired time.",
           "type": [
+            "string",
             "number",
             "null"
           ]
@@ -141,7 +136,6 @@
           ]
         },
         "start": {
-          "description": "Used start point.",
           "enum": [
             "Process",
             "Step"
@@ -149,7 +143,6 @@
           "type": "string"
         },
         "duration": {
-          "description": "In milliseconds.",
           "type": "number"
         }
       },
@@ -170,38 +163,31 @@
           ]
         },
         "serviceId": {
-          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockId": {
-          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockType": {
-          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
           "type": [
             "string",
             "null"
           ]
         },
         "key": {
-          "description": "Key of a top-level object within block.data.",
           "type": [
             "string",
             "null"
           ]
         },
-        "value": {
-          "description": "Compared value."
-        },
+        "value": {},
         "operator": {
-          "description": "Comparison approach.\nThe left-hand value is current value (block.data[key]).\nThe right-hand value is the condition value.",
           "enum": [
             "eq",
             "ge",
@@ -223,6 +209,25 @@
         "value"
       ]
     },
+    "JSCheckImpl": {
+      "description": "Evaluate user-defined code.\nScript must return boolean true",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "JSCheck"
+          ]
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "body",
+        "type"
+      ]
+    },
     "TaskStatusImpl": {
       "description": "Compare status of matching tasks with given status.\nEvaluate: validTasks.all(task => task.status === status)",
       "type": "object",
@@ -234,13 +239,14 @@
           ]
         },
         "ref": {
-          "description": "The user-defined reference key.\nMust match those set in TaskEdit.\nIf multiple tasks share the same ref key,\nall must match the given status.",
           "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/AutomationStatus"
         },
         "resetStatus": {
           "anyOf": [
             {
-              "description": "Task status to set at the beginning of the step.\nIf null, task is created if not exists, but not modified otherwise.",
               "enum": [
                 "Active",
                 "Cancelled",
@@ -256,10 +262,6 @@
               "type": "null"
             }
           ]
-        },
-        "status": {
-          "$ref": "#/definitions/AutomationStatus",
-          "description": "Desired status."
         }
       },
       "required": [
@@ -270,7 +272,6 @@
       ]
     },
     "AutomationStatus": {
-      "description": "Generic status type for Automation types.\nIt is used by multiple types.",
       "enum": [
         "Active",
         "Cancelled",
@@ -283,7 +284,6 @@
       "type": "string"
     },
     "AutomationAction<ActionImpl>": {
-      "description": "Common fields for all items.\nimpl is any of the action / condition Impl types.",
       "type": "object",
       "properties": {
         "id": {
@@ -305,6 +305,9 @@
             },
             {
               "$ref": "#/definitions/WebhookImpl"
+            },
+            {
+              "$ref": "#/definitions/JSApplyImpl"
             }
           ]
         }
@@ -327,21 +330,18 @@
           ]
         },
         "serviceId": {
-          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockId": {
-          "description": "Part of the unique identifier for a block.",
           "type": [
             "string",
             "null"
           ]
         },
         "blockType": {
-          "description": "Helps rendering and choosing blocks.\nCan either be a direct type, or an interface type.",
           "type": [
             "string",
             "null"
@@ -350,7 +350,6 @@
         "data": {
           "anyOf": [
             {
-              "description": "Data to be merged into the existing block.data object.",
               "type": "object",
               "properties": {},
               "additionalProperties": true
@@ -380,18 +379,15 @@
           ]
         },
         "ref": {
-          "description": "User-defined reference key.\nNot guaranteed to be unique.\nAll tasks with this ref are edited.",
           "type": "string"
         },
         "title": {
-          "description": "Human readable title.\nDefault or existing value is used if not set.",
           "type": [
             "string",
             "null"
           ]
         },
         "message": {
-          "description": "Human readable message.\nDefault or existing value is used if not set.",
           "type": [
             "string",
             "null"
@@ -400,7 +396,6 @@
         "status": {
           "anyOf": [
             {
-              "description": "Task status.\nDefault or existing value is used if not set.",
               "enum": [
                 "Active",
                 "Cancelled",
@@ -437,19 +432,15 @@
           ]
         },
         "url": {
-          "description": "Absolute URL to endpoint. May include params.",
           "type": "string"
         },
         "method": {
-          "$ref": "#/definitions/Method",
-          "description": "HTTP method."
+          "$ref": "#/definitions/Method"
         },
         "headers": {
-          "$ref": "#/definitions/Record<string,string>",
-          "description": "HTTP headers."
+          "$ref": "#/definitions/Record<string,string>"
         },
         "body": {
-          "description": "Request body.",
           "type": "string"
         }
       },
@@ -488,6 +479,25 @@
       "description": "Construct a type with a set of properties K of type T",
       "type": "object"
     },
+    "JSApplyImpl": {
+      "description": "Evaluate user-defined code",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "JSApply"
+          ]
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "body",
+        "type"
+      ]
+    },
     "AutomationTransition": {
       "description": "Object defining how a process can move from one step to another.\nCombining transitions allows for branching and while() behavior.",
       "type": "object",
@@ -496,23 +506,21 @@
           "pattern": "^[0-9a-fA-F\\-]{36}$",
           "type": "string"
         },
+        "enabled": {
+          "type": "boolean"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
+          }
+        },
         "next": {
           "description": "true: next step\nfalse: exit process\nstring: step ID",
           "type": [
             "string",
             "boolean"
           ]
-        },
-        "enabled": {
-          "description": "A transition must be enabled for it to be evaluated.",
-          "type": "boolean"
-        },
-        "conditions": {
-          "description": "All conditions in a transition must evaluate true.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AutomationCondition<ConditionImpl>"
-          }
         }
       },
       "required": [

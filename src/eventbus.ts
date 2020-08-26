@@ -1,45 +1,90 @@
-import mqtt from 'mqtt';
+import toPairs from 'lodash/toPairs';
+import mqtt, { IClientPublishOptions } from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
-import { blockEventType } from './getters';
+import { automationStateType, sparkStateType } from './getters';
 import logger from './logger';
-import { Block, CachedMessage, EventbusMessage } from './types';
-import { errorText, validateMessage } from './validation';
+import {
+  AutomationStateMessage,
+  Block,
+  CacheMessage,
+  EventbusMessage,
+  EventbusStateMessage,
+} from './types';
+import { errorText, schemas, validate } from './validation';
 
+const historyTopic = 'brewcast/history';
 const stateTopic = 'brewcast/state';
+const publishTopic = 'brewcast/state/automation';
 
-const cacheKey = (obj: Pick<EventbusMessage, 'key' | 'type'>): string =>
-  `${obj.key}__${obj.type}`;
+const stateMessage = (data: AutomationStateMessage['data']): AutomationStateMessage => ({
+  key: args.name,
+  type: automationStateType,
+  ttl: '60s',
+  data,
+});
+
+const isStateMessage = (obj: EventbusMessage): obj is EventbusStateMessage =>
+  obj instanceof Object
+  && 'type' in obj;
+
+const isExpired = (msg: CacheMessage): boolean =>
+  isStateMessage(msg)
+  && msg.received + parseDuration(msg.ttl) < new Date().getTime();
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
-  private cache: Record<string, CachedMessage> = {};
+  private cache: Record<string, CacheMessage> = {};
 
-  public getCached(key: string, type: string): EventbusMessage['data'] | null {
-    const msg = this.cache[cacheKey({ key, type })];
+  public getAllCached(): CacheMessage[] {
+    return toPairs(this.cache).map(([topic, msg]) => ({ ...msg, topic }));
+  }
+
+  public getCached(topic: string): CacheMessage | null {
+    const msg = this.cache[topic];
     if (msg === undefined) {
       return null;
     }
-    if (msg.received + parseDuration(msg.ttl) < new Date().getTime()) {
+    if (isStateMessage(msg) && isExpired(msg)) {
       return null;
     }
-    return msg.data;
+    return msg;
   }
 
-  public getBlocks(serviceId: string): Block[] {
-    return this.getCached(serviceId, blockEventType) ?? [];
+  public getBlocks(serviceId?: string): Block[] {
+    return Object.values(this.cache)
+      .filter((msg): msg is CacheMessage<EventbusStateMessage> =>
+        isStateMessage(msg)
+        && msg.type === sparkStateType
+        && (!serviceId || msg.key === serviceId)
+        && !isExpired(msg))
+      .map(msg => msg.data.blocks)
+      .flat(1);
   }
 
-  public async connect(): Promise<void> {
+  public connect(): void {
+    const emptyMessage = stateMessage({ processes: [], tasks: [] });
     const opts: mqtt.IClientOptions = {
       protocol: 'mqtt',
       host: 'eventbus',
+      will: {
+        topic: publishTopic,
+        payload: JSON.stringify(emptyMessage),
+        qos: 0,
+        retain: true,
+      },
     };
     this.client = mqtt.connect(undefined, opts);
 
-    this.client.on('error', e => logger.error(`mqtt error: ${e}`));
-    this.client.on('connect', () => this.client.subscribe(stateTopic + '/#'));
+    this.client.on('error', e => {
+      logger.error(`mqtt error: ${e}`);
+    });
+    this.client.on('connect', () => {
+      logger.info('Eventbus connected');
+      this.client?.subscribe(historyTopic + '/#');
+      this.client?.subscribe(stateTopic + '/#');
+    });
     this.client.on('message', (topic: string, body: Buffer) => {
       if (body && body.length > 0) {
         this.onMessage(topic, JSON.parse(body.toString()));
@@ -47,25 +92,32 @@ export class EventbusClient {
     });
   }
 
-  private onMessage(topic: string, message: EventbusMessage): void {
-    if (!validateMessage(message)) {
+  private onMessage(topic: string, message: EventbusStateMessage): void {
+    if (topic === publishTopic) {
+      return; // Skip messages published by this service
+    }
+    if (!validate(schemas.EventbusMessage, message)) {
       logger.warn(`Discarded eventbus message from '${topic}'`);
       logger.warn(errorText());
       return;
     }
-    if (message.key === args.name) {
-      return;
-    }
-    this.cache[cacheKey(message)] = {
+    this.cache[topic] = {
       ...message,
+      topic,
       received: new Date().getTime(),
     };
   }
 
-  public async publish(msg: EventbusMessage, opts?: mqtt.IClientPublishOptions): Promise<void> {
+  public async publishActive(data: any) {
     if (this.client) {
-      const topic = `${stateTopic}/${msg.type}`;
-      this.client.publish(topic, JSON.stringify(msg), opts);
+      const payload = JSON.stringify(stateMessage(data));
+      this.client.publish(publishTopic, payload, { retain: true });
+    }
+  }
+
+  public async publishRaw(topic: string, payload: string, opts?: IClientPublishOptions) {
+    if (this.client) {
+      this.client.publish(topic, payload, opts!);
     }
   }
 }

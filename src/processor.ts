@@ -3,7 +3,6 @@ import isString from 'lodash/isString';
 import takeRight from 'lodash/takeRight';
 import { v4 as uid } from 'uuid';
 
-import args from './args';
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
 import { getHandler } from './handlers';
@@ -32,10 +31,10 @@ const currentResult = (proc: AutomationProcess): AutomationStepResult => {
   return proc.results[proc.results.length - 1] ?? null;
 };
 
-const currentStep = (proc: AutomationProcess): AutomationStep => {
+const currentStep = (proc: AutomationProcess): AutomationStep | null => {
   const result = currentResult(proc);
   return result
-    ? proc.steps.find(s => s.id === result.stepId)
+    ? proc.steps.find(s => s.id === result.stepId) ?? null
     : null;
 };
 
@@ -350,10 +349,10 @@ const checkTransitions: UpdateFunc = async (opts) => {
  * @param proc The evaluated process.
  * @returns A new result, if available.
  */
-export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateResult> {
+export async function nextUpdateResult(proc: AutomationProcess): Promise<UpdateResult | null> {
   const opts: HandlerOpts = {
     proc,
-    activeStep: currentStep(proc),
+    activeStep: currentStep(proc)!, // null checked in initialProcessResult
     activeResult: currentResult(proc),
   };
   const result = null
@@ -427,10 +426,12 @@ export class Processor {
     this.pending = [];
 
     while (pendingNow.length) {
-      const jump = pendingNow.shift();
+      const jump = pendingNow.shift()!;
       try {
         const proc = await processDb.fetchById(jump.processId);
-        await processDb.save(await applyStepJump(proc, jump));
+        if (proc) {
+          await processDb.save(await applyStepJump(proc, jump));
+        }
       }
       catch (e) {
         logger.error(`Processor jump error: ${e.message}`);
@@ -451,13 +452,7 @@ export class Processor {
 
       const processes = await processDb.fetchAll();
       const tasks = await taskDb.fetchAll();
-
-      await eventbus.publish({
-        key: args.name,
-        type: 'automation.active',
-        data: { processes, tasks },
-        ttl: '60s',
-      }, { retain: true });
+      await eventbus.publishActive({ processes, tasks });
     }
     catch (e) {
       logger.error(`Processor update error: ${e.message}`);

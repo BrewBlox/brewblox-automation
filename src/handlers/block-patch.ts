@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 import { eventbus } from '../eventbus';
+import { parseObject } from '../postfixed';
 import { BlockPatchImpl } from '../types';
 import { ActionHandler } from './types';
-
-const stripPostFix = (key: string) => key.replace(/[\[<].+/, '');
 
 /**
  * Merge existing block data with the given change set.
@@ -27,19 +26,11 @@ const handler: ActionHandler<BlockPatchImpl> = {
       throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when applying ${title}`);
     }
 
-    // Filter keys with the same root but a different postfix
-    // We want 'key[min]' in impl.data to override 'key[s]' in block data
-    const baseKeys = Object.keys(impl.data).map(k => stripPostFix(k));
-    const blockData = {};
-    Object.entries(block.data)
-      .filter(([k]) => !baseKeys.includes(stripPostFix(k)))
-      .forEach(([k, v]) => blockData[k] = v);
-
     await axios.post(`http://${impl.serviceId}:5000/${impl.serviceId}/blocks/write`, {
       ...block,
       data: {
-        ...blockData,
-        ...impl.data,
+        ...block.data,
+        ...parseObject(impl.data), // Parse data to convert postfixed notation to bloxfields
       },
     });
   },

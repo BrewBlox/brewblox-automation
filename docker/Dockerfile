@@ -1,14 +1,9 @@
-FROM node:12 as base
-
-COPY ./package.json /app/package.json
-COPY ./package-lock.json /app/package-lock.json
-RUN cd /app && npm ci
-
-FROM node:12-alpine
-EXPOSE 5000
+FROM node:12-slim
 WORKDIR /app
+EXPOSE 5000
 
-COPY ./dist /app/dist
-COPY --from=base /app/node_modules /app/node_modules
+COPY ./tsconfig.json ./package*.json /app/
+COPY ./src /app/src
+RUN npm ci
 
-ENTRYPOINT [ "node", "dist/main.js" ]
+ENTRYPOINT ["npx", "ts-node", "src/main.ts"]
