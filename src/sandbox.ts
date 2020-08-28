@@ -68,6 +68,7 @@ export async function sandboxApi() {
       const resp = await axios.post<Block>(`http://${serviceId}:5000/${serviceId}/blocks/write`, block);
       const updated = resp.data;
       print(desc, 'result', updated);
+      eventbus.setCachedBlock(updated);
       return updated;
     },
     async publishEvent(topic: string, data: any): Promise<void> {
