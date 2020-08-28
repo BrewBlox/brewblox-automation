@@ -9,6 +9,10 @@ import {
   AutomationTask,
 } from './shared-types';
 
+interface HasId {
+  id: string;
+}
+
 export interface EventbusStateMessage {
   key: string;
   type: string;
