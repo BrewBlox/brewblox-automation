@@ -1,134 +1,114 @@
-import PouchDB from 'pouchdb';
-import MemoryAdapter from 'pouchdb-adapter-memory';
+import axios, { AxiosInstance } from 'axios';
 
 import args from './args';
-import logger from './logger';
+import { extendById, filterById, findById } from './functional';
 import { AutomationProcess, AutomationTask, StoreObject } from './types';
 
-type IdMeta = PouchDB.Core.IdMeta;
-type RevisionIdMeta = PouchDB.Core.RevisionIdMeta;
-
-PouchDB.plugin(MemoryAdapter);
-
-export const name = 'brewblox-automation';
-
-export class DatabaseClient {
-  private readonly localDb: PouchDB.Database;
-  private remoteDb: PouchDB.Database | null = null;
-
-  public readonly local: boolean;
-
-  public constructor() {
-    this.local = args.local;
-    this.localDb = new PouchDB(name, { adapter: 'memory' });
-  }
-
-  public connect(): void {
-    if (this.local) {
-      logger.info('Local mode: skipping database sync');
-      return;
-    }
-    this.remoteDb = new PouchDB(`http://${args.database}:5984/${name}`);
-    logger.info('Starting database sync: ' + this.remoteDb.name);
-    this.localDb
-      .sync(this.remoteDb, { live: true, retry: true })
-      .on('active', () => logger.info(`database sync active: ${name}`))
-      .on('complete', () => logger.info(`database sync end: ${name}`))
-      .on('error', (err) => logger.info(`database sync error: ${name} ${err}`));
-    this.checkRemote();
-  }
-
-  private async checkRemote() {
-    try {
-      await this.remoteDb!.info();
-    } catch (e) {
-      logger.warn(`Remote database not yet online: ${e.message}`);
-    }
-  }
-
-  public get db(): PouchDB.Database {
-    return this.localDb;
-  }
+export interface AutomationDatabase<T extends StoreObject> {
+  readonly local: boolean;
+  clear(): Promise<void>;
+  fetchAll(): Promise<T[]>;
+  fetchById(id: string): Promise<T | null>;
+  save(obj: T): Promise<T>;
+  remove(obj: T): Promise<T>;
 }
 
-export class AutomationDatabase<T extends StoreObject> {
-  private readonly client: DatabaseClient;
-  public readonly moduleId: string;
+export class AutomationLocalDatabase
+  <T extends StoreObject> implements AutomationDatabase<T> {
+  public readonly local = true;
+  private namespace: string;
+  private objects: T[] = [];
 
-  public constructor(client: DatabaseClient, moduleId: string) {
-    this.client = client;
-    this.moduleId = moduleId;
-  }
-
-  private get db(): PouchDB.Database {
-    return this.client.db;
-  }
-
-  private cleanId(docId: string): string {
-    return docId.substring(`${this.moduleId}__`.length);
-  }
-
-  private docId(id: string): string {
-    return `${this.moduleId}__${id}`;
-  }
-
-  private checkInModule({ id }: { id: string }): boolean {
-    return id.startsWith(`${this.moduleId}__`);
-  }
-
-  private asStoreObject(doc: IdMeta): T {
-    const { _id, ...obj } = doc;
-    return { ...obj, id: this.cleanId(_id) } as T;
-  }
-
-  private asDocument(obj: T): IdMeta & RevisionIdMeta {
-    const { id, _rev, ...doc } = obj as T & RevisionIdMeta;
-    return { ...doc, _rev, _id: this.docId(id) };
-  }
-
-  private asNewDocument(obj: T): IdMeta {
-    const { id, _rev, ...doc } = obj;
-    void _rev;
-    return { ...doc, _id: this.docId(id) };
+  public constructor(moduleId: string) {
+    this.namespace = `brewblox-automation:${moduleId}`;
   }
 
   public async clear() {
-    const resp = await this.db.allDocs();
-    const bulk = resp.rows
-      .filter(row => this.checkInModule(row))
-      .map(row => ({ _id: row.id, _rev: row.value.rev, _deleted: true }));
-    this.db.bulkDocs(bulk);
+    this.objects = [];
   }
 
   public async fetchAll(): Promise<T[]> {
-    const resp = await this.db.allDocs({ include_docs: true });
-    return resp.rows
-      .filter(row => this.checkInModule(row))
-      .map(row => this.asStoreObject(row.doc!));
+    return [...this.objects];
   }
 
   public async fetchById(id: string): Promise<T | null> {
-    return await this.db
-      .get(this.docId(id))
-      .then(doc => this.asStoreObject(doc));
-  }
-
-  public async create(obj: T): Promise<T> {
-    const resp = await this.db.put(this.asNewDocument(obj));
-    return { ...obj, _rev: resp.rev };
+    return findById(this.objects, id);
   }
 
   public async save(obj: T): Promise<T> {
-    const resp = await this.db.put(this.asDocument(obj));
-    return { ...obj, _rev: resp.rev };
+    const copy = { ...obj, namespace: this.namespace };
+    this.objects = extendById(this.objects, copy);
+    return copy;
   }
 
   public async remove(obj: T): Promise<T> {
-    await this.db.remove(this.asDocument(obj));
-    return { ...obj, _rev: undefined };
+    this.objects = filterById(this.objects, obj);
+    return obj;
   }
 }
 
-export const database = new DatabaseClient();
-export const taskDb = new AutomationDatabase<AutomationTask>(database, 'brewblox-task');
-export const processDb = new AutomationDatabase<AutomationProcess>(database, 'brewblox-process');
+export class AutomationRedisDatabase
+  <T extends StoreObject> implements AutomationDatabase<T> {
+  public readonly local = false;
+  private namespace: string;
+  private http: AxiosInstance;
+
+  public constructor(moduleId: string) {
+    this.namespace = `brewblox-automation:${moduleId}`;
+    this.http = axios.create({ baseURL: 'http://history:5000/history/datastore' });
+  }
+
+  public async clear() {
+    await this.http
+      .post('/mdelete', {
+        namespace: this.namespace,
+        filter: '*',
+      });
+  }
+
+  public async fetchAll(): Promise<T[]> {
+    return await this.http
+      .post<{ values: T[] }>('/mget', {
+        namespace: this.namespace,
+        filter: '*',
+      })
+      .then(resp => resp.data.values);
+  }
+
+  public async fetchById(id: string): Promise<T | null> {
+    return await this.http
+      .post<{ value: T | null }>('/get', {
+        namespace: this.namespace,
+        id,
+      })
+      .then(resp => resp.data.value);
+  }
+
+  public async save(obj: T): Promise<T> {
+    return await this.http
+      .post<{ value: T }>('/set', {
+        value: {
+          ...obj,
+          namespace: this.namespace,
+        },
+      })
+      .then(resp => resp.data.value);
+  }
+
+  public async remove(obj: T): Promise<T> {
+    await this.http
+      .post<{ value: T }>('/delete', {
+        namespace: this.namespace,
+        id: obj.id,
+      });
+    return obj;
+  }
+}
+
+const factory = <T extends StoreObject>(name: string): AutomationDatabase<T> =>
+  args.local
+    ? new AutomationLocalDatabase<T>(name)
+    : new AutomationRedisDatabase<T>(name);
+
+export const taskDb = factory<AutomationTask>('brewblox-task');
+export const processDb = factory<AutomationProcess>('brewblox-process');

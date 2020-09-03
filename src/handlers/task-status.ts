@@ -25,7 +25,7 @@ const handler: ConditionHandler<TaskStatusImpl> = {
     }
 
     if (existing.length === 0) {
-      await taskDb.create({
+      await taskDb.save({
         id: uid(),
         ref: impl.ref,
         title: `${title} task`,

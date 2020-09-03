@@ -35,6 +35,9 @@
     },
     "_rev": {
       "type": "string"
+    },
+    "namespace": {
+      "type": "string"
     }
   },
   "required": [
