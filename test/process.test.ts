@@ -2,7 +2,7 @@ import request from 'supertest';
 import { v4 as uid } from 'uuid';
 
 import app from '../src/app';
-import { database, processDb } from '../src/database';
+import { processDb } from '../src/database';
 import { AutomationProcess, AutomationStepJump, AutomationTemplate } from '../src/types';
 
 describe('/automation/process/', () => {
@@ -75,7 +75,7 @@ describe('/automation/process/', () => {
   });
 
   it('should be a local database', () => {
-    expect(database.local).toBe(true);
+    expect(processDb.local).toBe(true);
   });
 
   it('should initialize a process', async () => {

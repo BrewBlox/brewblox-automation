@@ -79,7 +79,7 @@ router.get('/read/:id', async (ctx) => {
 });
 
 router.post('/init', validateTemplateBody, createProcess, async (ctx) => {
-  ctx.body = await processDb.create(ctx.request.body);
+  ctx.body = await processDb.save(ctx.request.body);
   ctx.status = 201;
 });
 

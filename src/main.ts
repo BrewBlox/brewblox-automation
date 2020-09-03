@@ -3,14 +3,12 @@ import { get } from 'lodash';
 
 import app from './app';
 import args from './args';
-import { database } from './database';
 import { eventbus } from './eventbus';
 import logger from './logger';
 import { processor } from './processor';
 
 logger.info('==========Startup==========');
 
-database.connect();
 eventbus.connect();
 processor.start();
 

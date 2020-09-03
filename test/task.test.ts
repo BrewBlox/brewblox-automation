@@ -2,7 +2,7 @@ import request from 'supertest';
 import { v4 as uid } from 'uuid';
 
 import app from '../src/app';
-import { database, taskDb } from '../src/database';
+import { taskDb } from '../src/database';
 import { AutomationTask } from '../src/types';
 
 describe('/automation/task', () => {
@@ -21,7 +21,7 @@ describe('/automation/task', () => {
   beforeEach(done => taskDb.clear().then(() => done()));
 
   it('should be a local database', () => {
-    expect(database.local).toBe(true);
+    expect(taskDb.local).toBe(true);
   });
 
   it('should read empty database', async () => {
@@ -46,20 +46,6 @@ describe('/automation/task', () => {
     expect(res.body).toMatchObject([task]);
   });
 
-  it('should fail to create multiple tasks', async () => {
-    let res = await server
-      .post('/automation/task/create')
-      .send(task);
-
-    expect(res.status).toEqual(201);
-
-    res = await server
-      .post('/automation/task/create')
-      .send(task);
-
-    expect(res.status).toBeGreaterThan(400);
-  });
-
   it('should remove tasks', async () => {
     let res = await server
       .post('/automation/task/create')
@@ -67,7 +53,7 @@ describe('/automation/task', () => {
 
     const created: AutomationTask = res.body;
     expect(created).toMatchObject(task);
-    expect(created._rev).toBeDefined();
+    expect(created.namespace).toBeDefined();
 
     res = await server
       .get(`/automation/task/read/${task.id}`);
@@ -86,7 +72,7 @@ describe('/automation/task', () => {
     res = await server
       .get(`/automation/task/read/${task.id}`);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(204);
   });
 
   it('should validate arguments', async () => {
@@ -123,7 +109,7 @@ describe('/automation/task', () => {
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject({
       ...extended,
-      _rev: expect.stringMatching(/\d\-[a-z0-9]+/),
+      namespace: 'brewblox-automation:brewblox-task',
     });
   });
 });
