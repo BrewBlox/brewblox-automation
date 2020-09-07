@@ -13,102 +13,75 @@ export interface AutomationDatabase<T extends StoreObject> {
   remove(obj: T): Promise<T>;
 }
 
-export class AutomationLocalDatabase
-  <T extends StoreObject> implements AutomationDatabase<T> {
-  public readonly local = true;
-  private namespace: string;
-  private objects: T[] = [];
-
-  public constructor(moduleId: string) {
-    this.namespace = `brewblox-automation:${moduleId}`;
-  }
-
-  public async clear() {
-    this.objects = [];
-  }
-
-  public async fetchAll(): Promise<T[]> {
-    return [...this.objects];
-  }
-
-  public async fetchById(id: string): Promise<T | null> {
-    return findById(this.objects, id);
-  }
-
-  public async save(obj: T): Promise<T> {
-    const copy = { ...obj, namespace: this.namespace };
-    this.objects = extendById(this.objects, copy);
-    return copy;
-  }
-
-  public async remove(obj: T): Promise<T> {
-    this.objects = filterById(this.objects, obj);
-    return obj;
-  }
-}
-
 export class AutomationRedisDatabase
   <T extends StoreObject> implements AutomationDatabase<T> {
-  public readonly local = false;
   private namespace: string;
   private http: AxiosInstance;
+  private cache: T[] = [];
+  private initialized = false;
+
+  public readonly local: boolean;
 
   public constructor(moduleId: string) {
     this.namespace = `brewblox-automation:${moduleId}`;
+    this.local = args.local;
     this.http = axios.create({ baseURL: 'http://history:5000/history/datastore' });
   }
 
   public async clear() {
-    await this.http
-      .post('/mdelete', {
-        namespace: this.namespace,
-        filter: '*',
-      });
+    if (!this.local) {
+      await this.http
+        .post('/mdelete', {
+          namespace: this.namespace,
+          filter: '*',
+        });
+    }
+    this.cache = [];
   }
 
   public async fetchAll(): Promise<T[]> {
-    return await this.http
-      .post<{ values: T[] }>('/mget', {
-        namespace: this.namespace,
-        filter: '*',
-      })
-      .then(resp => resp.data.values);
+    if (!this.local && !this.initialized) {
+      this.cache = await this.http
+        .post<{ values: T[] }>('/mget', {
+          namespace: this.namespace,
+          filter: '*',
+        })
+        .then(resp => resp.data.values);
+      this.initialized = true;
+    }
+    return [...this.cache];
   }
 
   public async fetchById(id: string): Promise<T | null> {
-    return await this.http
-      .post<{ value: T | null }>('/get', {
-        namespace: this.namespace,
-        id,
-      })
-      .then(resp => resp.data.value);
+    return findById(this.cache, id);
   }
 
   public async save(obj: T): Promise<T> {
-    return await this.http
-      .post<{ value: T }>('/set', {
-        value: {
-          ...obj,
-          namespace: this.namespace,
-        },
-      })
-      .then(resp => resp.data.value);
+    const value = {
+      ...obj,
+      namespace: this.namespace,
+    };
+    const updated = this.local
+      ? value
+      : await this.http
+        .post<{ value: T }>('/set', { value })
+        .then(resp => resp.data.value);
+    this.cache = extendById(this.cache, updated);
+    return updated;
   }
 
   public async remove(obj: T): Promise<T> {
-    await this.http
-      .post<{ value: T }>('/delete', {
-        namespace: this.namespace,
-        id: obj.id,
-      });
+    if (!this.local) {
+      await this.http
+        .post<{ value: T }>('/delete', {
+          namespace: this.namespace,
+          id: obj.id,
+        });
+    }
+    this.cache = filterById(this.cache, obj);
     return obj;
   }
 }
 
-const factory = <T extends StoreObject>(name: string): AutomationDatabase<T> =>
-  args.local
-    ? new AutomationLocalDatabase<T>(name)
-    : new AutomationRedisDatabase<T>(name);
-
-export const taskDb = factory<AutomationTask>('brewblox-task');
-export const processDb = factory<AutomationProcess>('brewblox-process');
+export const taskDb = new AutomationRedisDatabase<AutomationTask>('brewblox-task');
+export const processDb = new AutomationRedisDatabase<AutomationProcess>('brewblox-process');
