@@ -11,9 +11,9 @@
   "scripts": {
     "schemas": "rm -rf src/schemas/*; ts-node schemas.ts",
     "build": "tsc",
-    "start": "ts-node ./src/main.ts",
-    "watch": "nodemon --watch 'src/**/*' --exec ts-node ./src/main.ts",
-    "test": "jest --detectOpenHandles --coverage --verbose",
+    "start": "node ./dist/main.js",
+    "dev": "nodemon --watch 'src/**/*' --exec ts-node src/main.ts",
+    "test": "jest --detectOpenHandles --coverage",
     "test:watch": "npm run test -- --watchAll",
     "lint": "tsc --noEmit && eslint \"src/**/*.{js,ts}\" --quiet"
   },
@@ -23,6 +23,7 @@
     "ajv": "^6.12.4",
     "async-mutex": "^0.2.4",
     "axios": "^0.19.2",
+    "detect-ts-node": "^1.0.5",
     "js-quantities": "^1.7.5",
     "koa": "^2.13.0",
     "koa-body": "^4.2.0",

@@ -1,5 +1,6 @@
 import { Mutex } from 'async-mutex';
 import { ChildProcess, fork } from 'child_process';
+import detectTSNode from 'detect-ts-node';
 import shortid from 'shortid';
 
 import { eventbus } from './eventbus';
@@ -15,16 +16,15 @@ export class AutomationSandbox {
   private mutex: Mutex = new Mutex();
   private proc: ChildProcess | null = null;
 
-  public constructor() {
-    this.ensureProcess();
-  }
-
   private ensureProcess(): ChildProcess {
     if (this.proc && this.proc.connected) {
       return this.proc;
     }
-    logger.info('Creating sandbox process...');
-    this.proc = fork('src/sandbox-main.ts');
+    const entrypoint = detectTSNode
+      ? 'src/sandbox-main.ts'
+      : 'dist/sandbox-main.js';
+    logger.info(`Creating sandbox process for '${entrypoint}'`);
+    this.proc = fork(entrypoint);
     return this.proc;
   }
 
