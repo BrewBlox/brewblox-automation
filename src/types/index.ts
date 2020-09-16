@@ -1,2 +1,2 @@
-export * from './local-types';
 export * from './shared-types';
+export * from './local-types';

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Router from 'koa-router';
 
-import { runIsolated } from '../sandbox';
+import sandbox from '../sandbox';
 const router = new Router();
 
 router.post('/webhook', async (ctx) => {
@@ -18,7 +18,7 @@ router.post('/webhook', async (ctx) => {
 
 router.post('/sandbox', async (ctx) => {
   const { body } = ctx.request.body;
-  ctx.body = await runIsolated(body);
+  ctx.body = await sandbox.run(body);
   ctx.status = 200;
 });
 

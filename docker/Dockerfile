@@ -4,6 +4,6 @@ EXPOSE 5000
 
 COPY ./tsconfig.json ./package*.json /app/
 COPY ./src /app/src
-RUN npm ci
+RUN npm ci && npm run build
 
-ENTRYPOINT ["npx", "ts-node", "src/main.ts"]
+ENTRYPOINT ["npm", "start"]

@@ -1,3 +1,6 @@
+import { AxiosInstance } from 'axios';
+import { get, isArray, isBoolean, isNumber, isPlainObject, isString } from 'lodash';
+
 import type { HasId } from './types';
 
 // Overloads for spliceById
@@ -69,4 +72,39 @@ export function findById<T extends HasId>(
   return id != null
     ? arr.find(v => v.id === id) ?? fallback
     : fallback;
+}
+
+const isSimpleType = (v: any): boolean =>
+  v == null
+  || isString(v)
+  || isNumber(v)
+  || isBoolean(v)
+  || isArray(v)
+  || isPlainObject(v);
+
+const simpleValue = (val: any) =>
+  isSimpleType(val)
+    ? val
+    : `[${typeof val}]`;
+
+export function sanitize(values: any, parse = true): any {
+  const serialized = JSON.stringify(values ?? null, (_, v) => simpleValue(v));
+  return parse ? JSON.parse(serialized) : serialized;
+}
+
+export function addInterceptors(axios: AxiosInstance): void {
+  axios
+    .interceptors
+    .response
+    .use(
+      (response) => response,
+      (e) => {
+        const resp = get(e, 'response.data', e.message ?? null);
+        const err = (resp instanceof Object) ? JSON.stringify(resp) : resp;
+        const url = get(e, 'response.config.url');
+        const method = get(e, 'response.config.method');
+        const status = get(e, 'response.status');
+        const msg = `[HTTP ERROR] method=${method}, url=${url}, status=${status}, response=${err}`;
+        return Promise.reject(new Error(msg));
+      });
 }
