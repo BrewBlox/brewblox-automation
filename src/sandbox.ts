@@ -4,13 +4,11 @@ import detectTSNode from 'detect-ts-node';
 import shortid from 'shortid';
 
 import { eventbus } from './eventbus';
-import { sanitize } from './functional';
+import { sanitize, sleep } from './functional';
 import logger from './logger';
 import type { SandboxInput, SandboxOutput, SandboxResult } from './types';
 
 const SANDBOX_TIMEOUT = 10 * 1000;
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class AutomationSandbox {
   private mutex: Mutex = new Mutex();

@@ -3,6 +3,11 @@ import { get, isArray, isBoolean, isNumber, isPlainObject, isString } from 'loda
 
 import type { HasId } from './types';
 
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Overloads for spliceById
 // if insert is false, the stub { id } is sufficient to remove the existing object
 export function spliceById<T extends HasId>(arr: T[], obj: T): T[];
@@ -27,7 +32,6 @@ export function spliceById<T extends HasId>(arr: T[], obj: T, insert = true): T[
   }
   return arr;
 }
-
 
 /**
  * Returns a new array consisting of all members of input array

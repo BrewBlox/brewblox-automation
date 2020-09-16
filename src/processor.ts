@@ -5,6 +5,7 @@ import { v4 as uid } from 'uuid';
 
 import { processDb, taskDb } from './database';
 import { eventbus } from './eventbus';
+import { sleep } from './functional';
 import { getHandler } from './handlers';
 import logger from './logger';
 import {
@@ -418,7 +419,17 @@ export class Processor {
 
   public start(): void {
     logger.info('Started processor');
-    setInterval(() => this.update(), 5000);
+    this.repeat();
+  }
+
+  public async repeat(): Promise<void> {
+    // Under some circumstances, update() can take >5s.
+    // setInterval() would then schedule a new call before the previous finished.
+    // Using an async loop ensures a 5s idle period between updates.
+    while (true) {
+      await sleep(5000);
+      await this.update();
+    }
   }
 
   public async update(): Promise<void> {
