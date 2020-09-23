@@ -7,7 +7,12 @@ import {
   AutomationStep,
   AutomationStepResult,
   AutomationTask,
+  SandboxResult,
 } from './shared-types';
+
+interface HasId {
+  id: string;
+}
 
 export interface EventbusStateMessage {
   key: string;
@@ -75,4 +80,18 @@ export interface JSONLink extends JSONBloxField {
   id: string | null;
   type: string;
   driven?: boolean;
+}
+
+export interface SandboxInput {
+  id: string;
+  script: string;
+  blocks: Block[];
+  events: CacheMessage[];
+}
+
+export interface SandboxOutput {
+  id: string;
+  result?: any;
+  error?: SandboxResult['error'];
+  message?: any;
 }

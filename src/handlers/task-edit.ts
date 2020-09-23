@@ -31,7 +31,7 @@ const handler: ActionHandler<TaskEditImpl> = {
     }
 
     if (existing.length === 0) {
-      await taskDb.create({
+      await taskDb.save({
         id: uid(),
         ref,
         title: title ?? 'New task',

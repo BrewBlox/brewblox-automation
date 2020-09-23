@@ -1,4 +1,4 @@
-import { runIsolated } from '../sandbox';
+import sandbox from '../sandbox';
 import { JSApplyImpl } from '../types';
 import { ActionHandler } from './types';
 
@@ -12,7 +12,7 @@ const handler: ActionHandler<JSApplyImpl> = {
   },
 
   async apply({ impl }) {
-    await runIsolated(impl.body);
+    await sandbox.run(impl.body);
   },
 };
 

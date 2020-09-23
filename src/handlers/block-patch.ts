@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { eventbus } from '../eventbus';
 import { parseObject } from '../postfixed';
-import { BlockPatchImpl } from '../types';
+import { Block, BlockPatchImpl } from '../types';
 import { ActionHandler } from './types';
 
 /**
@@ -26,13 +26,14 @@ const handler: ActionHandler<BlockPatchImpl> = {
       throw new Error(`Block ${impl.serviceId}::${impl.blockId} not found when applying ${title}`);
     }
 
-    await axios.post(`http://${impl.serviceId}:5000/${impl.serviceId}/blocks/write`, {
+    const resp = await axios.post<Block>(`http://${impl.serviceId}:5000/${impl.serviceId}/blocks/write`, {
       ...block,
       data: {
         ...block.data,
         ...parseObject(impl.data), // Parse data to convert postfixed notation to bloxfields
       },
     });
+    eventbus.setCachedBlock(resp.data);
   },
 };
 

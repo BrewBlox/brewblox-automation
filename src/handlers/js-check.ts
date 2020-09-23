@@ -1,4 +1,4 @@
-import { runIsolated } from '../sandbox';
+import sandbox from '../sandbox';
 import { JSCheckImpl } from '../types';
 import { ConditionHandler } from './types';
 
@@ -13,7 +13,7 @@ const handler: ConditionHandler<JSCheckImpl> = {
   },
 
   async check({ impl }) {
-    const result = await runIsolated(impl.body);
+    const result = await sandbox.run(impl.body);
 
     // Very strict equality check
     // truthy objects such as {} or 'false' must not evaluate true

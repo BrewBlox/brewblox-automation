@@ -12,7 +12,7 @@ router.get('/all', async (ctx) => {
 });
 
 router.post('/create', validateTaskBody, async (ctx) => {
-  ctx.body = await taskDb.create(ctx.request.body);
+  ctx.body = await taskDb.save(ctx.request.body);
   ctx.status = 201;
 });
 

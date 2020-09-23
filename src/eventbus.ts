@@ -3,6 +3,7 @@ import mqtt, { IClientPublishOptions } from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
+import { spliceById } from './functional';
 import { automationStateType, sparkStateType } from './getters';
 import logger from './logger';
 import {
@@ -61,6 +62,17 @@ export class EventbusClient {
         && !isExpired(msg))
       .map(msg => msg.data.blocks)
       .flat(1);
+  }
+
+  public setCachedBlock(block: Block): void {
+    const message = Object.values(this.cache)
+      .find((msg): msg is CacheMessage<EventbusStateMessage> =>
+        isStateMessage(msg)
+        && msg.type === sparkStateType
+        && msg.key === block.serviceId);
+    if (message) {
+      spliceById(message.data.blocks, block);
+    }
   }
 
   public connect(): void {

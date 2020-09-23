@@ -213,7 +213,9 @@ export class Quantity implements JSONQuantity, HasLogger {
   // Convenience aliases
   public isEqualTo = this.eq;
   public isGreaterThan = this.gt;
+  public isGreaterThanEqual = this.gte;
   public isLessThan = this.lt;
+  public isLessThanEqual = this.lte;
 }
 
 export function qty(value: JSONQuantity): Quantity;
