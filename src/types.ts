@@ -1,3 +1,5 @@
+export * from './shared-types/automation-types';
+
 ////////////////////////////////////////////////////////////////
 // Local
 ////////////////////////////////////////////////////////////////
@@ -8,7 +10,7 @@ import {
   AutomationStepResult,
   AutomationTask,
   SandboxResult,
-} from './shared-types';
+} from './shared-types/automation-types';
 
 interface HasId {
   id: string;
@@ -54,14 +56,14 @@ export interface SparkStateMessage extends EventbusStateMessage {
   data: {
     service: any;
     blocks: Block[];
-  }
+  };
 }
 
 export interface AutomationStateMessage extends EventbusStateMessage {
   data: {
     processes: AutomationProcess[];
     tasks: AutomationTask[];
-  }
+  };
 }
 
 export interface JSONBloxField {
