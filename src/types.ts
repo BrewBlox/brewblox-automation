@@ -12,7 +12,7 @@ import {
   SandboxResult,
 } from './shared-types/automation-types';
 
-interface HasId {
+export interface HasId {
   id: string;
 }
 
