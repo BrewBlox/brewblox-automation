@@ -2,22 +2,13 @@ import Ajv from 'ajv';
 import { Middleware } from 'koa';
 
 import logger from './logger';
-// Run "npm run schemas" to generate these
-import AutomationProcess from './schemas/AutomationProcess.json';
-import AutomationStepJump from './schemas/AutomationStepJump.json';
-import AutomationTask from './schemas/AutomationTask.json';
-import AutomationTemplate from './schemas/AutomationTemplate.json';
-import EventbusMessage from './schemas/EventbusMessage.json';
+import { schemas } from './schemas';
+export { schemas } from './schemas';
+
+// One of the values in the `schemas` object
+export type SchemaType = typeof schemas[keyof typeof schemas];
 
 const ajv = new Ajv();
-
-export const schemas = {
-  AutomationProcess,
-  AutomationStepJump,
-  AutomationTask,
-  AutomationTemplate,
-  EventbusMessage,
-};
 
 export const lastErrors = () =>
   ajv.errors ?? [];
@@ -25,8 +16,11 @@ export const lastErrors = () =>
 export const errorText = () =>
   ajv.errorsText();
 
-export const validate = (schema: any, data: any) =>
-  ajv.validate(schema, data);
+export function validate<T>(schema: SchemaType, data: unknown): T | null {
+  return ajv.validate(schema, data)
+    ? data as T
+    : null;
+}
 
 export const validatorMiddleware =
   (schema: any): Middleware => {

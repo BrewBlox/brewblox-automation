@@ -1,4 +1,4 @@
-export * from './shared-types/automation-types';
+export * from './shared-types';
 
 ////////////////////////////////////////////////////////////////
 // Local
@@ -10,7 +10,7 @@ import {
   AutomationStepResult,
   AutomationTask,
   SandboxResult,
-} from './shared-types/automation-types';
+} from './shared-types';
 
 export interface HasId {
   id: string;

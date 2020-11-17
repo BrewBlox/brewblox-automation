@@ -9,7 +9,7 @@
   "author": "BrewPi B.V.",
   "license": "GPL-3.0",
   "scripts": {
-    "schemas": "rm -rf src/schemas/*; ts-node schemas.ts",
+    "schemas": "rm -rf src/schemas/*; ts-node dev/schemas.ts",
     "build": "tsc",
     "start": "node ./dist/main.js",
     "dev": "nodemon --watch 'src/**/*' --exec ts-node src/main.ts",
