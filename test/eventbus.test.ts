@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 
 import { eventbus, EventbusClient } from '../src/eventbus';
-import { EventbusMessage } from '../src/types';
+import { StateEvent } from '../src/types';
 
 
 jest.mock('mqtt');
@@ -23,7 +23,7 @@ describe('Eventbus message parsing', () => {
   };
   _mqtt.connect.mockReturnValue(mockClient);
 
-  const send = (msg: EventbusMessage, topic = 'brewcast/state') =>
+  const send = (msg: StateEvent, topic = 'brewcast/state') =>
     callbacks.message(topic, Buffer.from(JSON.stringify(msg)));
 
   it('should handle messages', async () => {
@@ -34,7 +34,7 @@ describe('Eventbus message parsing', () => {
 
     expect(mockClient.subscribe.mock.calls.length).toBe(0);
     callbacks.connect();
-    expect(mockClient.subscribe.mock.calls.length).toBe(2);
+    expect(mockClient.subscribe.mock.calls.length).toBe(1);
 
     send({
       key: 'test',

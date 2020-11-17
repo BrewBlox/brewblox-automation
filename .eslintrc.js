@@ -36,7 +36,7 @@ module.exports = {
     'no-multiple-empty-lines': 'error',
     'comma-dangle': [
       'error',
-      'always-multiline'
+      'always-multiline',
     ],
     'max-len': [
       'error',
@@ -44,7 +44,7 @@ module.exports = {
       2,
       {
         'ignoreUrls': true,
-        'ignoreComments': false
+        'ignoreComments': false,
       }
     ],
   },

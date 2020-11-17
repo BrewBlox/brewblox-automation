@@ -3,36 +3,31 @@ import mqtt, { IClientPublishOptions } from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
-import { spliceById } from './functional';
 import { automationStateType, sparkStateType } from './getters';
 import logger from './logger';
+import { AutomationEvent, AutomationEventData, SparkPatchEvent, SparkStateEvent, StateEvent } from './shared-types';
 import {
-  AutomationStateMessage,
   Block,
   CacheMessage,
-  EventbusMessage,
-  EventbusStateMessage,
 } from './types';
 import { errorText, schemas, validate } from './validation';
 
-const historyTopic = 'brewcast/history';
 const stateTopic = 'brewcast/state';
 const publishTopic = 'brewcast/state/automation';
 
-const stateMessage = (data: AutomationStateMessage['data']): AutomationStateMessage => ({
+const stateMessage = (data: AutomationEventData): AutomationEvent => ({
   key: args.name,
   type: automationStateType,
   ttl: '60s',
   data,
 });
 
-const isStateMessage = (obj: EventbusMessage): obj is EventbusStateMessage =>
-  obj instanceof Object
-  && 'type' in obj;
+// const isStateMessage = (obj: EventbusMessage): obj is EventbusStateMessage =>
+//   obj instanceof Object
+//   && 'type' in obj;
 
 const isExpired = (msg: CacheMessage): boolean =>
-  isStateMessage(msg)
-  && msg.received + parseDuration(msg.ttl) < new Date().getTime();
+  msg.received + parseDuration(msg.ttl) < new Date().getTime();
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
@@ -44,10 +39,7 @@ export class EventbusClient {
 
   public getCached(topic: string): CacheMessage | null {
     const msg = this.cache[topic];
-    if (msg === undefined) {
-      return null;
-    }
-    if (isStateMessage(msg) && isExpired(msg)) {
+    if (!msg || isExpired(msg)) {
       return null;
     }
     return msg;
@@ -55,24 +47,12 @@ export class EventbusClient {
 
   public getBlocks(serviceId?: string): Block[] {
     return Object.values(this.cache)
-      .filter((msg): msg is CacheMessage<EventbusStateMessage> =>
-        isStateMessage(msg)
-        && msg.type === sparkStateType
+      .filter((msg): msg is CacheMessage<SparkStateEvent> =>
+        msg.type === sparkStateType
         && (!serviceId || msg.key === serviceId)
         && !isExpired(msg))
       .map(msg => msg.data.blocks)
       .flat(1);
-  }
-
-  public setCachedBlock(block: Block): void {
-    const message = Object.values(this.cache)
-      .find((msg): msg is CacheMessage<EventbusStateMessage> =>
-        isStateMessage(msg)
-        && msg.type === sparkStateType
-        && msg.key === block.serviceId);
-    if (message) {
-      spliceById(message.data.blocks, block);
-    }
   }
 
   public connect(): void {
@@ -94,7 +74,6 @@ export class EventbusClient {
     });
     this.client.on('connect', () => {
       logger.info('Eventbus connected');
-      this.client?.subscribe(historyTopic + '/#');
       this.client?.subscribe(stateTopic + '/#');
     });
     this.client.on('message', (topic: string, body: Buffer) => {
@@ -104,20 +83,36 @@ export class EventbusClient {
     });
   }
 
-  private onMessage(topic: string, message: EventbusStateMessage): void {
+  private onMessage(topic: string, msg: unknown): void {
     if (topic === publishTopic) {
       return; // Skip messages published by this service
     }
-    if (!validate(schemas.EventbusMessage, message)) {
-      logger.warn(`Discarded eventbus message from '${topic}'`);
-      logger.warn(errorText());
-      return;
+    if (validate<SparkPatchEvent>(schemas.SparkPatchEvent, msg)) {
+      const state = this.cache[msg.key] as CacheMessage<SparkStateEvent>;
+      if (state) {
+        const { blocks } = state.data;
+        const { changed, deleted } = msg.data;
+        const affected = [
+          ...changed.map(block => block.id),
+          ...deleted,
+        ];
+        state.data.blocks = [
+          ...blocks.filter(v => !affected.includes(v.id)),
+          ...changed,
+        ];
+      }
     }
-    this.cache[topic] = {
-      ...message,
-      topic,
-      received: new Date().getTime(),
-    };
+    else if (validate<StateEvent>(schemas.StateEvent, msg)) {
+      this.cache[topic] = {
+        ...msg,
+        topic,
+        received: new Date().getTime(),
+      };
+    }
+    else {
+      logger.warn(`Discarded state message from '${topic}'`);
+      logger.warn(errorText());
+    }
   }
 
   public async publishActive(data: any) {

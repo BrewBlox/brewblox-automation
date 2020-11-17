@@ -1,0 +1,249 @@
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "Spark.state"
+      ]
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/ApiSparkStatus"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Block"
+          }
+        }
+      },
+      "required": [
+        "blocks",
+        "status"
+      ]
+    },
+    "key": {
+      "type": "string"
+    },
+    "ttl": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "data",
+    "key",
+    "ttl",
+    "type"
+  ],
+  "definitions": {
+    "ApiSparkStatus": {
+      "type": "object",
+      "properties": {
+        "device_address": {
+          "type": "string"
+        },
+        "connection_kind": {
+          "enum": [
+            "simulation",
+            "usb",
+            "wifi"
+          ],
+          "type": "string"
+        },
+        "service_info": {
+          "$ref": "#/definitions/SparkServiceInfo"
+        },
+        "device_info": {
+          "$ref": "#/definitions/SparkDeviceInfo"
+        },
+        "handshake_info": {
+          "$ref": "#/definitions/SparkHandshakeInfo"
+        },
+        "is_autoconnecting": {
+          "type": "boolean"
+        },
+        "is_connected": {
+          "type": "boolean"
+        },
+        "is_acknowledged": {
+          "type": "boolean"
+        },
+        "is_synchronized": {
+          "type": "boolean"
+        },
+        "is_updating": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "connection_kind",
+        "device_address",
+        "device_info",
+        "handshake_info",
+        "is_acknowledged",
+        "is_autoconnecting",
+        "is_connected",
+        "is_synchronized",
+        "is_updating",
+        "service_info"
+      ]
+    },
+    "SparkServiceInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "firmware_version": {
+          "type": "string"
+        },
+        "proto_version": {
+          "type": "string"
+        },
+        "firmware_date": {
+          "type": "string"
+        },
+        "proto_date": {
+          "type": "string"
+        },
+        "device_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "device_id",
+        "firmware_date",
+        "firmware_version",
+        "name",
+        "proto_date",
+        "proto_version"
+      ]
+    },
+    "SparkDeviceInfo": {
+      "type": "object",
+      "properties": {
+        "system_version": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "reset_reason": {
+          "type": "string"
+        },
+        "firmware_version": {
+          "type": "string"
+        },
+        "proto_version": {
+          "type": "string"
+        },
+        "firmware_date": {
+          "type": "string"
+        },
+        "proto_date": {
+          "type": "string"
+        },
+        "device_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "device_id",
+        "firmware_date",
+        "firmware_version",
+        "platform",
+        "proto_date",
+        "proto_version",
+        "reset_reason",
+        "system_version"
+      ]
+    },
+    "SparkHandshakeInfo": {
+      "type": "object",
+      "properties": {
+        "is_compatible_firmware": {
+          "type": "boolean"
+        },
+        "is_latest_firmware": {
+          "type": "boolean"
+        },
+        "is_valid_device_id": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "is_compatible_firmware",
+        "is_latest_firmware",
+        "is_valid_device_id"
+      ]
+    },
+    "Block": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nid": {
+          "type": "number"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/BlockType"
+        },
+        "data": {}
+      },
+      "required": [
+        "data",
+        "groups",
+        "id",
+        "serviceId",
+        "type"
+      ]
+    },
+    "BlockType": {
+      "enum": [
+        "ActuatorAnalogMock",
+        "ActuatorLogic",
+        "ActuatorOffset",
+        "ActuatorPwm",
+        "Balancer",
+        "DS2408",
+        "DS2413",
+        "DeprecatedObject",
+        "DigitalActuator",
+        "DisplaySettings",
+        "Groups",
+        "InactiveObject",
+        "MockPins",
+        "MotorValve",
+        "Mutex",
+        "OneWireBus",
+        "Pid",
+        "SetpointProfile",
+        "SetpointSensorPair",
+        "Spark2Pins",
+        "Spark3Pins",
+        "SysInfo",
+        "TempSensorCombi",
+        "TempSensorMock",
+        "TempSensorOneWire",
+        "Ticks",
+        "TouchSettings",
+        "WiFiSettings"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
