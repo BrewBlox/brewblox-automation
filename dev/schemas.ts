@@ -14,7 +14,9 @@ const types = [
   'AutomationStepJump',
   'AutomationTask',
   'AutomationTemplate',
-  'EventbusMessage',
+  'StateEvent',
+  'SparkStateEvent',
+  'SparkPatchEvent',
 ].sort();
 
 types.forEach(t => {

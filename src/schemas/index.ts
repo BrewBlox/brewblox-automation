@@ -3,12 +3,16 @@ import AutomationProcess from './AutomationProcess.json';
 import AutomationStepJump from './AutomationStepJump.json';
 import AutomationTask from './AutomationTask.json';
 import AutomationTemplate from './AutomationTemplate.json';
-import EventbusMessage from './EventbusMessage.json';
+import SparkPatchEvent from './SparkPatchEvent.json';
+import SparkStateEvent from './SparkStateEvent.json';
+import StateEvent from './StateEvent.json';
 
 export const schemas = {
   AutomationProcess,
   AutomationStepJump,
   AutomationTask,
   AutomationTemplate,
-  EventbusMessage,
+  SparkPatchEvent,
+  SparkStateEvent,
+  StateEvent,
 };

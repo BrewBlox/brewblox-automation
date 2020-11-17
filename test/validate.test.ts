@@ -18,9 +18,9 @@ describe('object validation', () => {
 
     const schema = schemas.AutomationTask;
 
-    expect(validate(schema, task)).toBeTruthy();
-    expect(validate(schema, {})).toBeNull();
-    expect(validate(schema, { ...task, extra: true })).toBeTruthy();
+    expect(validate(schema, task)).toBe(true);
+    expect(validate(schema, {})).toBe(false);
+    expect(validate(schema, { ...task, extra: true })).toBe(true);
   });
 
   it('should validate processes', () => {
@@ -95,8 +95,8 @@ describe('object validation', () => {
 
     validate(schema, proc);
     expect(lastErrors()).toEqual([]);
-    expect(validate(schema, proc)).toBeTruthy();
-    expect(validate(schema, {})).toBeNull();
-    expect(validate(schema, { ...proc, extra: true })).toBeTruthy();
+    expect(validate(schema, proc)).toBe(true);
+    expect(validate(schema, {})).toBe(false);
+    expect(validate(schema, { ...proc, extra: true })).toBe(true);
   });
 });

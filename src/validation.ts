@@ -16,10 +16,8 @@ export const lastErrors = () =>
 export const errorText = () =>
   ajv.errorsText();
 
-export function validate<T>(schema: SchemaType, data: unknown): T | null {
-  return ajv.validate(schema, data)
-    ? data as T
-    : null;
+export function validate<T>(schema: SchemaType, data: unknown): data is T {
+  return ajv.validate(schema, data) as boolean;
 }
 
 export const validatorMiddleware =
