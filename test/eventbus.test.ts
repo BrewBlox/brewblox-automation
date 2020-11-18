@@ -42,14 +42,14 @@ describe('Eventbus message parsing', () => {
       ttl: '10m',
       data: { grid: true },
     });
-    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
+    expect(client.getCached('gridnodes', 'test')).toMatchObject({ data: { grid: true } });
 
     // Invalid messages are discarded
     send({
       key: 'test',
       type: 'gridnodes',
     } as any);
-    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
+    expect(client.getCached('gridnodes', 'test')).toMatchObject({ data: { grid: true } });
 
     // Messages originating from automation are ignored
     send({
@@ -58,7 +58,7 @@ describe('Eventbus message parsing', () => {
       ttl: '10m',
       data: { recursive: 'this.recursive' },
     }, 'brewcast/state/automation');
-    expect(client.getCached('brewcast/state')).toMatchObject({ data: { grid: true } });
+    expect(client.getCached('recursive', 'automation')).toBeNull();
 
     // getBlocks should default to empty list
     expect(client.getBlocks('sparkey')).toEqual([]);

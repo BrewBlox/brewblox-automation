@@ -22,10 +22,6 @@ const stateMessage = (data: AutomationEventData): AutomationEvent => ({
   data,
 });
 
-// const isStateMessage = (obj: EventbusMessage): obj is EventbusStateMessage =>
-//   obj instanceof Object
-//   && 'type' in obj;
-
 const isExpired = (msg: CacheMessage): boolean =>
   msg.received + parseDuration(msg.ttl) < new Date().getTime();
 
@@ -37,8 +33,8 @@ export class EventbusClient {
     return toPairs(this.cache).map(([topic, msg]) => ({ ...msg, topic }));
   }
 
-  public getCached(topic: string): CacheMessage | null {
-    const msg = this.cache[topic];
+  public getCached(type: string, key: string): CacheMessage | null {
+    const msg = this.cache[`${type}/${key}`];
     if (!msg || isExpired(msg)) {
       return null;
     }
@@ -88,7 +84,7 @@ export class EventbusClient {
       return; // Skip messages published by this service
     }
     if (validate<SparkPatchEvent>(schemas.SparkPatchEvent, msg)) {
-      const state = this.cache[msg.key] as CacheMessage<SparkStateEvent>;
+      const state = this.getCached(sparkStateType, msg.key) as CacheMessage<SparkStateEvent>;
       if (state) {
         const { blocks } = state.data;
         const { changed, deleted } = msg.data;
@@ -103,7 +99,7 @@ export class EventbusClient {
       }
     }
     else if (validate<StateEvent>(schemas.StateEvent, msg)) {
-      this.cache[topic] = {
+      this.cache[`${msg.type}/${msg.key}`] = {
         ...msg,
         topic,
         received: new Date().getTime(),
