@@ -1,0 +1,111 @@
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "Spark.patch"
+      ]
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "changed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Block"
+          }
+        },
+        "deleted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "changed",
+        "deleted"
+      ]
+    },
+    "key": {
+      "type": "string"
+    },
+    "ttl": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "data",
+    "key",
+    "ttl",
+    "type"
+  ],
+  "definitions": {
+    "Block": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nid": {
+          "type": "number"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/BlockType"
+        },
+        "data": {}
+      },
+      "required": [
+        "data",
+        "groups",
+        "id",
+        "serviceId",
+        "type"
+      ]
+    },
+    "BlockType": {
+      "enum": [
+        "ActuatorAnalogMock",
+        "ActuatorLogic",
+        "ActuatorOffset",
+        "ActuatorPwm",
+        "Balancer",
+        "DS2408",
+        "DS2413",
+        "DeprecatedObject",
+        "DigitalActuator",
+        "DisplaySettings",
+        "Groups",
+        "InactiveObject",
+        "MockPins",
+        "MotorValve",
+        "Mutex",
+        "OneWireBus",
+        "Pid",
+        "SetpointProfile",
+        "SetpointSensorPair",
+        "Spark2Pins",
+        "Spark3Pins",
+        "SysInfo",
+        "TempSensorCombi",
+        "TempSensorMock",
+        "TempSensorOneWire",
+        "Ticks",
+        "TouchSettings",
+        "WiFiSettings"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

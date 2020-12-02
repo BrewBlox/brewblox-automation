@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "ttl": {
+      "type": "string"
+    },
+    "data": {}
+  },
+  "required": [
+    "data",
+    "key",
+    "ttl",
+    "type"
+  ],
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
