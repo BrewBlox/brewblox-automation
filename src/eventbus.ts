@@ -1,40 +1,54 @@
-import toPairs from 'lodash/toPairs';
 import mqtt, { IClientPublishOptions } from 'mqtt';
 import parseDuration from 'parse-duration';
 
 import args from './args';
 import { automationStateType, sparkStateType } from './getters';
 import logger from './logger';
-import { AutomationEvent, AutomationEventData, SparkPatchEvent, SparkStateEvent, StateEvent } from './shared-types';
+import { AutomationEvent, AutomationEventData, SparkPatchEvent, SparkStateEvent } from './shared-types';
 import {
   Block,
   CacheMessage,
 } from './types';
-import { errorText, schemas, validate } from './validation';
+import { schemas, validate } from './validation';
 
 const stateTopic = 'brewcast/state';
 const publishTopic = 'brewcast/state/automation';
+const ttl = parseDuration('1d');
 
 const stateMessage = (data: AutomationEventData): AutomationEvent => ({
   key: args.name,
   type: automationStateType,
-  ttl: '60s',
   data,
 });
 
 const isExpired = (msg: CacheMessage): boolean =>
-  msg.received + parseDuration(msg.ttl) < new Date().getTime();
+  msg.received + ttl < new Date().getTime();
 
 export class EventbusClient {
   private client: mqtt.Client | null = null;
   private cache: Record<string, CacheMessage> = {};
 
   public getAllCached(): CacheMessage[] {
-    return toPairs(this.cache).map(([topic, msg]) => ({ ...msg, topic }));
+    return Object
+      .values(this.cache)
+      .map(v => ({ ...v }));
   }
 
-  public getCached(type: string, key: string): CacheMessage | null {
-    const msg = this.cache[`${type}/${key}`];
+  public setCached<T>(topic: string, payload: T | null) {
+    if (payload == null) {
+      delete this.cache[topic];
+    }
+    else {
+      this.cache[topic] = {
+        topic,
+        payload,
+        received: new Date().getTime(),
+      };
+    }
+  }
+
+  public getCached<T>(topic: string): CacheMessage<T> | null {
+    const msg = this.cache[topic] as CacheMessage<T> | undefined;
     if (!msg || isExpired(msg)) {
       return null;
     }
@@ -43,11 +57,13 @@ export class EventbusClient {
 
   public getBlocks(serviceId?: string): Block[] {
     return Object.values(this.cache)
-      .filter((msg): msg is CacheMessage<SparkStateEvent> =>
-        msg.type === sparkStateType
-        && (!serviceId || msg.key === serviceId)
-        && !isExpired(msg))
-      .map(msg => msg.data.blocks)
+      .filter((msg): msg is CacheMessage<SparkStateEvent> => {
+        const payload: SparkStateEvent = msg.payload as any;
+        return payload.type === sparkStateType
+          && (!serviceId || payload.key === serviceId)
+          && !isExpired(msg);
+      })
+      .map(msg => msg.payload.data.blocks)
       .flat(1);
   }
 
@@ -76,38 +92,36 @@ export class EventbusClient {
       if (body && body.length > 0) {
         this.onMessage(topic, JSON.parse(body.toString()));
       }
+      else {
+        this.onMessage(topic, null);
+      }
     });
   }
 
-  private onMessage(topic: string, msg: unknown): void {
+  private onMessage(topic: string, payload: unknown | null): void {
     if (topic === publishTopic) {
       return; // Skip messages published by this service
     }
-    if (validate<SparkPatchEvent>(schemas.SparkPatchEvent, msg)) {
-      const state = this.getCached(sparkStateType, msg.key) as CacheMessage<SparkStateEvent>;
-      if (state) {
-        const { blocks } = state.data;
-        const { changed, deleted } = msg.data;
+
+    this.setCached(topic, payload);
+
+    // Handle patch events
+    if (validate<SparkPatchEvent>(schemas.SparkPatchEvent, payload)) {
+      const baseTopic = `brewcast/state/${payload.key}`;
+      const base = this.getCached<SparkStateEvent>(baseTopic);
+      if (base) {
+        const { blocks } = base.payload.data;
+        const { changed, deleted } = payload.data;
         const affected = [
           ...changed.map(block => block.id),
           ...deleted,
         ];
-        state.data.blocks = [
+        base.payload.data.blocks = [
           ...blocks.filter(v => !affected.includes(v.id)),
           ...changed,
         ];
+        this.setCached(baseTopic, base.payload);
       }
-    }
-    else if (validate<StateEvent>(schemas.StateEvent, msg)) {
-      this.cache[`${msg.type}/${msg.key}`] = {
-        ...msg,
-        topic,
-        received: new Date().getTime(),
-      };
-    }
-    else {
-      logger.warn(`Discarded state message from '${topic}'`);
-      logger.warn(errorText());
     }
   }
 

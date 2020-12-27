@@ -1,7 +1,6 @@
 import mqtt from 'mqtt';
 
 import { eventbus, EventbusClient } from '../src/eventbus';
-import { StateEvent } from '../src/types';
 
 
 jest.mock('mqtt');
@@ -23,7 +22,7 @@ describe('Eventbus message parsing', () => {
   };
   _mqtt.connect.mockReturnValue(mockClient);
 
-  const send = (msg: StateEvent, topic = 'brewcast/state') =>
+  const send = (topic: string, msg: any) =>
     callbacks.message(topic, Buffer.from(JSON.stringify(msg)));
 
   it('should handle messages', async () => {
@@ -36,29 +35,27 @@ describe('Eventbus message parsing', () => {
     callbacks.connect();
     expect(mockClient.subscribe.mock.calls.length).toBe(1);
 
-    send({
-      key: 'test',
-      type: 'gridnodes',
-      ttl: '10m',
-      data: { grid: true },
+    send('brewcast/state/service',
+      {
+        key: 'test',
+        type: 'gridnodes',
+        ttl: '10m',
+        data: { grid: true },
+      });
+    expect(client.getCached('brewcast/state/service')).toMatchObject({
+      topic: 'brewcast/state/service',
+      payload: { data: { grid: true } },
     });
-    expect(client.getCached('gridnodes', 'test')).toMatchObject({ data: { grid: true } });
-
-    // Invalid messages are discarded
-    send({
-      key: 'test',
-      type: 'gridnodes',
-    } as any);
-    expect(client.getCached('gridnodes', 'test')).toMatchObject({ data: { grid: true } });
 
     // Messages originating from automation are ignored
-    send({
-      key: 'automation',
-      type: 'recursive',
-      ttl: '10m',
-      data: { recursive: 'this.recursive' },
-    }, 'brewcast/state/automation');
-    expect(client.getCached('recursive', 'automation')).toBeNull();
+    send('brewcast/state/automation',
+      {
+        key: 'automation',
+        type: 'recursive',
+        ttl: '10m',
+        data: { recursive: 'this.recursive' },
+      });
+    expect(client.getCached('brewcast/state/automation')).toBeNull();
 
     // getBlocks should default to empty list
     expect(client.getBlocks('sparkey')).toEqual([]);

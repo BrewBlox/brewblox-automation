@@ -14,7 +14,6 @@ const types = [
   'AutomationStepJump',
   'AutomationTask',
   'AutomationTemplate',
-  'StateEvent',
   'SparkStateEvent',
   'SparkPatchEvent',
 ].sort();
