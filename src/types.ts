@@ -10,7 +10,6 @@ import {
   AutomationStepResult,
   Block,
   SandboxResult,
-  StateEvent,
 } from './shared-types';
 
 export interface HasId {
@@ -22,8 +21,9 @@ export interface HistoryEvent {
   data: any;
 }
 
-export type CacheMessage<T extends StateEvent = StateEvent> = T & {
+export type CacheMessage<T = unknown> = {
   topic: string;
+  payload: T;
   received: number;
 }
 

@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "key": {
+      "type": "string"
+    },
     "type": {
       "type": "string",
       "enum": [
@@ -24,18 +27,11 @@
         "blocks",
         "status"
       ]
-    },
-    "key": {
-      "type": "string"
-    },
-    "ttl": {
-      "type": "string"
     }
   },
   "required": [
     "data",
     "key",
-    "ttl",
     "type"
   ],
   "definitions": {

@@ -5,7 +5,6 @@ import AutomationTask from './AutomationTask.json';
 import AutomationTemplate from './AutomationTemplate.json';
 import SparkPatchEvent from './SparkPatchEvent.json';
 import SparkStateEvent from './SparkStateEvent.json';
-import StateEvent from './StateEvent.json';
 
 export const schemas = {
   AutomationProcess,
@@ -14,5 +13,4 @@ export const schemas = {
   AutomationTemplate,
   SparkPatchEvent,
   SparkStateEvent,
-  StateEvent,
 };
