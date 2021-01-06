@@ -22,7 +22,7 @@
     "@types/js-quantities": "^1.6.2",
     "ajv": "^6.12.4",
     "async-mutex": "^0.2.4",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "detect-ts-node": "^1.0.5",
     "js-quantities": "^1.7.5",
     "koa": "^2.13.0",
