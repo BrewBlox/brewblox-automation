@@ -68,7 +68,7 @@ steps:
     --tag $(DOCKER_REPO):$(TAG)
     --build-arg service_info="$(git describe) @ $(date)"
     --push
-    --platform linux/amd64,linux/arm/v7
+    --platform linux/amd64,linux/arm/v7,linux/arm64/v8
     docker
   displayName: Docker build
   condition: and(succeeded(), variables.BRANCH)
